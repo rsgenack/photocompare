@@ -15,9 +15,9 @@ A modern web application for comparing photos side by side with various comparis
 
 ## Screenshots
 
-![Slider Comparison](public/screenshots/slider-comparison.png)
-![Side by Side View](public/screenshots/side-by-side.png)
-![Upload Interface](public/screenshots/upload-interface.png)
+![Image Upload Interface](public/screenshots/imageupload.png)
+![Comparison View](public/screenshots/compare.png)
+![Final Ranking](public/screenshots/finalranking.png)
 
 ## Getting Started
 
