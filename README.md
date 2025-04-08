@@ -1,26 +1,54 @@
-# Photo Compare
+# 📸 Photo Compare
 
-A modern web application for comparing photos side by side with various comparison methods. Built with Next.js and React.
+A modern web application for comparing and ranking photos using various comparison methods. Built with Next.js, React, and Tailwind CSS.
 
-## Features
+> 💡 **Inspiration**: This project was inspired by [Brad Wojcik](https://github.com/boldandbrad)'s amazing work on [Pub Meeple's Ranking Engine](https://www.pubmeeple.com/ranking-engine). We use his ranking engine almost daily to make decisions - from choosing dinner to planning our wedding! Thanks Brad for showing us how fun and useful ranking systems can be! 🎉
 
-- Multiple comparison methods for analyzing photos:
+## ✨ Features
+
+- **🖼️ Multiple Comparison Methods**:
   - Side-by-side comparison
-  - Interactive slider to compare different versions of the same photo
+  - Interactive slider comparison (powered by [JuxtaposeJS](https://github.com/NUKnightLab/juxtapose))
   - Real-time adjustments and controls
-- Modern, responsive UI built with Radix UI components
-- Easy-to-use drag-and-drop interface
-- Real-time photo comparison
-- Dark/Light theme support
+  - Aspect ratio validation
 
-## Getting Started
+- **🎨 Modern UI/UX**:
+  - Clean, intuitive interface
+  - Responsive design
+  - Dark/Light theme support
+  - Smooth animations and transitions
+  - Drag-and-drop image upload
 
-### Prerequisites
+- **🚀 Advanced Features**:
+  - ELO rating system for photo ranking
+  - Image compression and optimization
+  - Detailed logging and debugging
+  - Keyboard shortcuts for quick navigation
+  - Progress tracking
+
+## 🛠️ Tech Stack
+
+- **🎭 Frontend**:
+  - [Next.js](https://nextjs.org/) - React framework
+  - [React](https://reactjs.org/) - UI library
+  - [Tailwind CSS](https://tailwindcss.com/) - Utility-first CSS framework
+  - [Radix UI](https://www.radix-ui.com/) - Unstyled, accessible components
+  - [Framer Motion](https://www.framer.com/motion/) - Animation library
+
+- **🔧 Development Tools**:
+  - [TypeScript](https://www.typescriptlang.org/) - Type safety
+  - [ESLint](https://eslint.org/) - Code linting
+  - [Prettier](https://prettier.io/) - Code formatting
+  - [Jest](https://jestjs.io/) - Testing framework
+
+## 🚀 Getting Started
+
+### 📋 Prerequisites
 
 - Node.js (version 18.2.0 or higher)
 - npm or yarn package manager
 
-### Installation
+### 💻 Installation
 
 1. Clone the repository:
 ```bash
@@ -35,31 +63,83 @@ npm install
 yarn install
 ```
 
-3. Run the development server:
+3. Start the development server:
 ```bash
 npm run dev
 # or
 yarn dev
 ```
 
-4. Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+4. Open [http://localhost:3000](http://localhost:3000) in your browser 🌐
 
-## Tech Stack
+## 📁 Project Structure
 
-- [Next.js](https://nextjs.org/) - React framework
-- [React](https://reactjs.org/) - UI library
-- [Radix UI](https://www.radix-ui.com/) - UI component library
-- [Tailwind CSS](https://tailwindcss.com/) - CSS framework
-- [TypeScript](https://www.typescriptlang.org/) - Type safety
+```
+photocompare/
+├── app/                 # Next.js app directory
+├── components/          # React components
+│   ├── ui/             # Reusable UI components
+│   └── photo-compare/  # Photo comparison components
+├── hooks/              # Custom React hooks
+├── lib/                # Utility functions
+├── public/             # Static assets
+├── styles/             # Global styles
+└── utils/              # Helper utilities
+```
 
-## Contributing
+## 👩‍💻 Development
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+### 📜 Available Scripts
 
-## License
+- `npm run dev` - Start development server 🚀
+- `npm run build` - Build for production 🏗️
+- `npm run start` - Start production server 🏁
+- `npm run lint` - Run ESLint 🔍
+- `npm run format` - Format code with Prettier ✨
+
+### 🔑 Key Components
+
+- `photo-compare.jsx` - Main comparison component
+- `juxtapose-comparison.jsx` - Slider comparison implementation
+- `comparison-view.jsx` - Side-by-side comparison view
+- `image-uploader.jsx` - Image upload and management
+
+## 🤝 Contributing
+
+1. Fork the repository 🍴
+2. Create your feature branch (`git checkout -b feature/amazing-feature`) 🌿
+3. Commit your changes (`git commit -m 'Add some amazing feature'`) 💾
+4. Push to the branch (`git push origin feature/amazing-feature`) 🚀
+5. Open a Pull Request 📬
+
+## 🙏 Acknowledgments
+
+This project builds upon and extends several amazing open-source projects:
+
+- **[JuxtaposeJS](https://github.com/NUKnightLab/juxtapose)** by Northwestern University Knight Lab
+  - Provides the core slider comparison functionality
+  - Enables interactive before/after image comparisons
+  - Used under the MIT License
+  - Special thanks to the Knight Lab team for their excellent work
+
+- **[Radix UI](https://www.radix-ui.com/)** by Modulz
+  - Provides accessible, unstyled UI components
+  - Enables consistent, accessible user interfaces
+  - Used under the MIT License
+
+- **[Tailwind CSS](https://tailwindcss.com/)** by Adam Wathan
+  - Provides utility-first CSS framework
+  - Enables rapid UI development
+  - Used under the MIT License
+
+## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## Deployment
+## 🚀 Deployment
 
-The application is deployed on Vercel and can be accessed at [v0-photo-compare.vercel.app](https://v0-photo-compare.vercel.app/). 
+The application is deployed on Vercel and can be accessed at [v0-photo-compare.vercel.app](https://v0-photo-compare.vercel.app/).
+
+---
+
+Made with ❤️ by the Photo Compare team 
