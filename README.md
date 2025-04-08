@@ -1,33 +1,56 @@
-# Photo Compare
+# Photo Compare 📸
 
-A modern web application for comparing photos side by side with various comparison methods. Built with Next.js and React.
+A modern web application for comparing and ranking photos using various comparison methods. Built with Next.js and React.
 
-## Features
+## ✨ Features
 
-- Multiple comparison methods for analyzing photos:
-  - Side-by-side comparison
-  - Interactive slider to compare different versions of the same photo
-  - Real-time adjustments and controls
-- Modern, responsive UI built with Radix UI components
-- Easy-to-use drag-and-drop interface
-- Real-time photo comparison
-- Dark/Light theme support
+### Multiple Comparison Methods
+- **Side-by-Side Comparison** 🔄
+- **Interactive Slider** (powered by [JuxtaposeJS](https://github.com/NUKnightLab/juxtapose)) 🎚️
+- **Ranking Engine** (inspired by [Pub Meeple's Ranking Engine](https://pubmeeple.com/ranking-engine/)) 🏆
 
-## Screenshots
+### Modern UI/UX
+- Beautiful, responsive interface built with Radix UI components 🎨
+- Dark/Light theme support 🌓
+- Drag-and-drop interface for easy photo uploads 📤
+- Real-time photo comparison and adjustments ⚡
 
-![Image Upload Interface](public/screenshots/imageupload.png)
-![Comparison View](public/screenshots/compare.png)
-![Final Ranking](public/screenshots/finalranking.png)
+### Advanced Features
+- Automatic aspect ratio detection and warnings ⚠️
+- Zoom and pan controls for detailed comparison 🔍
+- Progress tracking and confidence scoring 📊
+- Exportable results and rankings 📤
 
-## Getting Started
+## 🛠️ Tech Stack
+
+- [Next.js](https://nextjs.org/) - React framework
+- [React](https://reactjs.org/) - UI library
+- [Radix UI](https://www.radix-ui.com/) - UI component library
+- [Tailwind CSS](https://tailwindcss.com/) - CSS framework
+- [TypeScript](https://www.typescriptlang.org/) - Type safety
+
+## 📦 Project Structure
+
+```
+photocompare/
+├── app/                 # Next.js app directory
+├── components/          # React components
+│   ├── ui/             # Reusable UI components
+│   └── ...            # Feature-specific components
+├── hooks/              # Custom React hooks
+├── lib/                # Utility functions
+├── public/             # Static assets
+├── styles/             # Global styles
+└── ...                # Configuration files
+```
+
+## 🚀 Development
 
 ### Prerequisites
-
 - Node.js (version 18.2.0 or higher)
 - npm or yarn package manager
 
 ### Installation
-
 1. Clone the repository:
 ```bash
 git clone https://github.com/rsgenack/photocompare.git
@@ -48,24 +71,46 @@ npm run dev
 yarn dev
 ```
 
-4. Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+4. Open [http://localhost:3000](http://localhost:3000) in your browser
 
-## Tech Stack
+## 🤝 Contributing
 
-- [Next.js](https://nextjs.org/) - React framework
-- [React](https://reactjs.org/) - UI library
-- [Radix UI](https://www.radix-ui.com/) - UI component library
-- [Tailwind CSS](https://tailwindcss.com/) - CSS framework
-- [TypeScript](https://www.typescriptlang.org/) - Type safety
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
-## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-## License
+## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## Deployment
+## 🌟 Acknowledgments
 
-The application is deployed on Vercel and can be accessed at [v0-photo-compare.vercel.app](https://v0-photo-compare.vercel.app). 
+### JuxtaposeJS
+- **Project**: [JuxtaposeJS](https://github.com/NUKnightLab/juxtapose)
+- **Organization**: [Northwestern University Knight Lab](https://knightlab.northwestern.edu/)
+- **License**: [MPL 2.0](https://www.mozilla.org/en-US/MPL/2.0/)
+- **Contribution**: Core comparison functionality and slider implementation
+
+### Radix UI
+- **Project**: [Radix UI](https://www.radix-ui.com/)
+- **Organization**: [Modulz](https://www.modulz.app/)
+- **License**: [MIT](https://github.com/radix-ui/primitives/blob/main/LICENSE)
+- **Contribution**: Accessible UI components and design system
+
+### Tailwind CSS
+- **Project**: [Tailwind CSS](https://tailwindcss.com/)
+- **Organization**: [Tailwind Labs](https://tailwindcss.com/about)
+- **License**: [MIT](https://github.com/tailwindlabs/tailwindcss/blob/master/LICENSE)
+- **Contribution**: Utility-first CSS framework
+
+## 💡 Inspiration
+
+This project was inspired by [Brad Wojcik](https://github.com/bradwoj)'s work on [Pub Meeple's Ranking Engine](https://pubmeeple.com/ranking-engine/). The ranking engine's elegant approach to pairwise comparisons and its practical applications in decision-making (from dinner orders to wedding invitations) served as a foundation for this project's comparison and ranking features.
+
+Special thanks to the Knight Lab team for their work on JuxtaposeJS, which powers our interactive comparison features.
+
+---
+
+Made with ❤️ by [rsgenack](https://github.com/rsgenack) 
