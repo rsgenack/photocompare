@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react"
 import { ArrowLeft, ArrowRight, Maximize, Minimize, X, ZoomIn, ZoomOut } from "lucide-react"
 import Slider from "rc-slider"
 import "rc-slider/assets/index.css"
+import ReactCompareImage from "react-compare-image"
 
 // Add aspectRatio to the props
 export default function ComparisonView({
@@ -15,6 +16,7 @@ export default function ComparisonView({
   onRemoveImage,
   aspectRatio,
   setZoom = () => {}, // Provide a default empty function
+  overlayMode = "slider", // 'slider' or 'side-by-side' when aspectRatio is provided
 }) {
   // Add state for fit mode
   const [fitMode, setFitMode] = useState("contain") // "contain" or "cover"
@@ -131,96 +133,113 @@ export default function ComparisonView({
         </div>
       </div>
 
-      {/* Images side by side */}
-      <div className="flex flex-col md:flex-row gap-6">
-        <div className="flex-1 flex flex-col">
-          <div
-            className="overflow-hidden select-none relative flex-grow border-2 border-black cursor-pointer w-full"
-            style={{
-              ...(aspectRatio ? { aspectRatio: aspectRatio } : { height: "300px", minHeight: "300px" }),
-              backgroundColor: "white",
-              WebkitTapHighlightColor: "transparent",
-              outline: "none",
-            }}
-            onClick={handleLeftImageClick}
-            role="button"
-            tabIndex={0}
-            aria-label="Select left image"
-          >
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <img
-                ref={leftImageRef}
-                src={leftSrc || "/placeholder.svg"}
-                alt="Left comparison image"
-                className={`w-full h-full ${
-                  aspectRatio ? "object-contain" : fitMode === "contain" ? "object-contain" : "object-cover"
-                }`}
-                style={{ transform: `scale(${zoom / 100})` }}
-                draggable="false"
-              />
-            </div>
-
-            {/* X button to remove left image */}
-            <button
-              onClick={(e) => {
-                e.stopPropagation() // Prevent click from triggering parent onClick
-                console.log("Removing left image:", leftImage?.id)
-                if (onRemoveImage && leftImage?.id) {
-                  onRemoveImage(leftImage.id)
-                }
+      {/* Slider for version comparisons */}
+      {aspectRatio && overlayMode === "slider" ? (
+        <div className="w-full max-w-2xl mx-auto" style={{ aspectRatio: aspectRatio }}>
+          <ReactCompareImage
+            leftImage={leftSrc}
+            rightImage={rightSrc}
+            leftImageLabel="Left Version"
+            rightImageLabel="Right Version"
+            sliderLineWidth={4}
+            sliderLineColor="#d11149"
+            handleSize={48}
+            aspectRatio={aspectRatio}
+            onSliderPositionChange={(pos) => {}}
+            alt="Image comparison slider"
+          />
+        </div>
+      ) : (
+        <div className="flex flex-col md:flex-row gap-6">
+          <div className="flex-1 flex flex-col">
+            <div
+              className="overflow-hidden select-none relative flex-grow border-2 border-black cursor-pointer w-full"
+              style={{
+                ...(aspectRatio ? { aspectRatio: aspectRatio } : { height: "300px", minHeight: "300px" }),
+                backgroundColor: "white",
+                WebkitTapHighlightColor: "transparent",
+                outline: "none",
               }}
-              className="absolute top-3 right-3 bg-cardinal text-white w-8 h-8 rounded-full flex items-center justify-center shadow-md z-20"
-              title="Remove this image from comparisons"
+              onClick={handleLeftImageClick}
+              role="button"
+              tabIndex={0}
+              aria-label="Select left image"
             >
-              <X className="h-5 w-5" />
-            </button>
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                <img
+                  ref={leftImageRef}
+                  src={leftSrc || "/placeholder.svg"}
+                  alt="Left comparison image"
+                  className={`w-full h-full ${
+                    aspectRatio ? "object-contain" : fitMode === "contain" ? "object-contain" : "object-cover"
+                  }`}
+                  style={{ transform: `scale(${zoom / 100})` }}
+                  draggable="false"
+                />
+              </div>
+
+              {/* X button to remove left image */}
+              <button
+                onClick={(e) => {
+                  e.stopPropagation() // Prevent click from triggering parent onClick
+                  console.log("Removing left image:", leftImage?.id)
+                  if (onRemoveImage && leftImage?.id) {
+                    onRemoveImage(leftImage.id)
+                  }
+                }}
+                className="absolute top-3 right-3 bg-cardinal text-white w-8 h-8 rounded-full flex items-center justify-center shadow-md z-20"
+                title="Remove this image from comparisons"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+          </div>
+
+          <div className="flex-1 flex flex-col">
+            <div
+              className="overflow-hidden select-none relative flex-grow border-2 border-black cursor-pointer w-full"
+              style={{
+                ...(aspectRatio ? { aspectRatio: aspectRatio } : { height: "300px", minHeight: "300px" }),
+                backgroundColor: "white",
+                WebkitTapHighlightColor: "transparent",
+                outline: "none",
+              }}
+              onClick={handleRightImageClick}
+              role="button"
+              tabIndex={0}
+              aria-label="Select right image"
+            >
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                <img
+                  ref={rightImageRef}
+                  src={rightSrc || "/placeholder.svg"}
+                  alt="Right comparison image"
+                  className={`w-full h-full ${
+                    aspectRatio ? "object-contain" : fitMode === "contain" ? "object-contain" : "object-cover"
+                  }`}
+                  style={{ transform: `scale(${zoom / 100})` }}
+                  draggable="false"
+                />
+              </div>
+
+              {/* X button to remove right image */}
+              <button
+                onClick={(e) => {
+                  e.stopPropagation() // Prevent click from triggering parent onClick
+                  console.log("Removing right image:", rightImage?.id)
+                  if (onRemoveImage && rightImage?.id) {
+                    onRemoveImage(rightImage.id)
+                  }
+                }}
+                className="absolute top-3 right-3 bg-cardinal text-white w-8 h-8 rounded-full flex items-center justify-center shadow-md z-20"
+                title="Remove this image from comparisons"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
           </div>
         </div>
-
-        <div className="flex-1 flex flex-col">
-          <div
-            className="overflow-hidden select-none relative flex-grow border-2 border-black cursor-pointer w-full"
-            style={{
-              ...(aspectRatio ? { aspectRatio: aspectRatio } : { height: "300px", minHeight: "300px" }),
-              backgroundColor: "white",
-              WebkitTapHighlightColor: "transparent",
-              outline: "none",
-            }}
-            onClick={handleRightImageClick}
-            role="button"
-            tabIndex={0}
-            aria-label="Select right image"
-          >
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <img
-                ref={rightImageRef}
-                src={rightSrc || "/placeholder.svg"}
-                alt="Right comparison image"
-                className={`w-full h-full ${
-                  aspectRatio ? "object-contain" : fitMode === "contain" ? "object-contain" : "object-cover"
-                }`}
-                style={{ transform: `scale(${zoom / 100})` }}
-                draggable="false"
-              />
-            </div>
-
-            {/* X button to remove right image */}
-            <button
-              onClick={(e) => {
-                e.stopPropagation() // Prevent click from triggering parent onClick
-                console.log("Removing right image:", rightImage?.id)
-                if (onRemoveImage && rightImage?.id) {
-                  onRemoveImage(rightImage.id)
-                }
-              }}
-              className="absolute top-3 right-3 bg-cardinal text-white w-8 h-8 rounded-full flex items-center justify-center shadow-md z-20"
-              title="Remove this image from comparisons"
-            >
-              <X className="h-5 w-5" />
-            </button>
-          </div>
-        </div>
-      </div>
+      )}
 
       {/* Improved zoom controls with reset button */}
       <div className="bg-gray-100 p-4 border-2 border-black">

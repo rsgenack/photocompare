@@ -52,17 +52,25 @@ export default function IntroPage({ onGetStarted }) {
   return (
     <div className="editorial-container py-12">
       <div className="mb-16">
-        <motion.div initial="hidden" animate="visible" className="relative mb-8">
-          <h1 className="text-[clamp(2.5rem,8vw,8rem)] font-black tracking-tight text-center font-display mb-4 px-2 overflow-hidden">
+        <motion.div initial="hidden" animate="visible" className="relative mb-8 w-full max-w-full overflow-visible">
+          <h1
+            className="text-[clamp(2.5rem,8vw,8rem)] font-black tracking-tight text-center font-display mb-4 px-2 w-full max-w-full break-words overflow-visible"
+            style={{
+              lineHeight: 1.05,
+              wordBreak: "break-word",
+              WebkitTextWrap: "balance",
+              textWrap: "balance",
+              hyphens: "auto",
+            }}
+          >
             <span
-              className="relative inline-block text-transparent bg-clip-text"
+              className="relative inline-block bg-clip-text text-transparent w-full max-w-full break-words"
               style={{
-                backgroundImage: "linear-gradient(to right, #d11149, #f17105, #ffba08, #b1cf5f, #90e0f3, #7b89ef)",
-                width: "100%",
-                display: "inline-block",
-                overflowWrap: "break-word",
-                wordWrap: "break-word",
-                hyphens: "auto",
+                backgroundImage:
+                  "linear-gradient(to right, #d11149, #f17105, #ffba08, #b1cf5f, #90e0f3, #7b89ef)",
+                WebkitBackgroundClip: "text",
+                backgroundClip: "text",
+                WebkitTextFillColor: "transparent",
               }}
             >
               VOTOGRAPHER
