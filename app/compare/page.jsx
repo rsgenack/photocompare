@@ -1,4 +1,4 @@
-import PhotoCompare from '@/components/photo-compare';
+import PhotoCompare from '@/components/photo-compare.jsx';
 
 export default function Compare() {
   return (

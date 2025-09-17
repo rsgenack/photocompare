@@ -74,6 +74,12 @@ export default function PhotoCompare() {
   const changeStep = useCallback((newStep) => {
     scrollToTop();
     setStep(newStep);
+    // push slug to URL so refresh preserves state
+    try {
+      const slug = newStep === 'intro' ? 'start' : newStep;
+      const url = `/${slug}`;
+      window.history.pushState({ step: newStep }, '', url);
+    } catch {}
   }, []);
 
   // Calculate final rankings based on Elo rating
@@ -698,6 +704,24 @@ export default function PhotoCompare() {
   // This section contains the slider comparison functionality that has
   // been locked to Version 6. Do not modify this code.
   // =====================================================================
+
+  // Restore step based on URL on mount
+  useEffect(() => {
+    try {
+      const path = (typeof window !== 'undefined' ? window.location.pathname : '/') || '/';
+      const seg = path.replace(/^\//, '').toLowerCase();
+      const urlStep = seg === '' ? 'splash' : seg === 'start' ? 'intro' : seg;
+      const allowed = new Set(['splash', 'intro', 'type', 'upload', 'compare', 'results']);
+      if (allowed.has(urlStep)) {
+        setStep(urlStep);
+      }
+      window.addEventListener('popstate', (e) => {
+        const p = window.location.pathname.replace(/^\//, '');
+        const s = p === '' ? 'splash' : p === 'start' ? 'intro' : p;
+        if (allowed.has(s)) setStep(s);
+      });
+    } catch {}
+  }, []);
 
   // Render the appropriate page based on the current step
   if (step === 'splash') {
