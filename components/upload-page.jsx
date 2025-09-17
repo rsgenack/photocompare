@@ -78,7 +78,7 @@ export default function UploadPage({
             ).then((checked) => {
               const bad = checked.filter((i) => i.__invalid);
               if (bad.length > 0) {
-                setInvalidImages(bad.map((b) => b.id));
+                setInvalidImages(bad);
                 setShowInvalidModal(true);
               }
               const good = checked.filter((i) => !i.__invalid).map(({ __invalid, ...rest }) => rest);
@@ -134,9 +134,9 @@ export default function UploadPage({
 
       <InvalidImagesModal
         isOpen={showInvalidModal}
-        invalidCount={invalidImages.length}
+        invalid={invalidImages}
         onRemove={() => {
-          // Just do nothing further (we already skipped invalid on add)
+          // Already skipped invalid on add; just close
           setShowInvalidModal(false);
           setInvalidImages([]);
         }}
