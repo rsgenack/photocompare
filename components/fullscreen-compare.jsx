@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
 import { formatNumber } from '@/utils/format';
+import { useEffect, useRef, useState } from 'react';
 
 export default function FullScreenCompare({
   progress,
@@ -72,11 +72,16 @@ export default function FullScreenCompare({
         )}
 
         {active && (
-          <div className="w-full h-[calc(100%-64px)] flex flex-col md:flex-row gap-4 items-center justify-center p-6 overflow-hidden">
+          <div className="w-full h-[calc(100%-64px)] flex flex-col md:flex-row gap-4 items-center justify-center p-6 pb-6 overflow-auto box-border">
             <div
               className="relative flex-1 h-1/2 md:h-full max-h-full w-full border-2 border-black bg-white cursor-pointer flex items-center justify-center"
               onClick={onSelectLeft}
-              style={{ aspectRatio: (leftImage.width && leftImage.height) ? leftImage.width / leftImage.height : undefined }}
+              style={{
+                aspectRatio:
+                  leftImage.width && leftImage.height
+                    ? leftImage.width / leftImage.height
+                    : undefined,
+              }}
             >
               <img
                 src={leftImage.url}
@@ -99,7 +104,12 @@ export default function FullScreenCompare({
             <div
               className="relative flex-1 h-1/2 md:h-full max-h-full w-full border-2 border-black bg-white cursor-pointer flex items-center justify-center"
               onClick={onSelectRight}
-              style={{ aspectRatio: (rightImage.width && rightImage.height) ? rightImage.width / rightImage.height : undefined }}
+              style={{
+                aspectRatio:
+                  rightImage.width && rightImage.height
+                    ? rightImage.width / rightImage.height
+                    : undefined,
+              }}
             >
               <img
                 src={rightImage.url}
@@ -119,6 +129,8 @@ export default function FullScreenCompare({
                 </button>
               )}
             </div>
+            {/* bottom spacer to mirror top spacing */}
+            <div className="h-6 md:h-6 shrink-0" />
           </div>
         )}
       </div>

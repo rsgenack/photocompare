@@ -11,13 +11,13 @@ import {
   updateRatingsAdaptive,
   updateUncertainties,
 } from '@/utils/elo-rating';
+import { formatNumber } from '@/utils/format';
 import { scrollToTop } from '@/utils/scroll-utils';
 import { useCallback, useEffect, useState } from 'react';
 import ComparisonTypePage from './comparison-type-page.jsx';
 import ComparisonView from './comparison-view.jsx';
 import DimensionWarningModal from './dimension-warning-modal.jsx';
 import FullScreenCompare from './fullscreen-compare.jsx';
-import { formatNumber } from '@/utils/format';
 import IntroPage from './intro-page.jsx';
 import ResultsPage from './results-page.jsx';
 import SplashScreen from './splash-screen.jsx';
