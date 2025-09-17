@@ -1,6 +1,6 @@
 import PhotoCompare from '@/components/photo-compare';
 
-export default function Home() {
+export default function Compare() {
   return (
     <main className="container mx-auto py-8 px-4">
       <PhotoCompare />

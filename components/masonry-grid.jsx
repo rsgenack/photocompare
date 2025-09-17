@@ -1,14 +1,14 @@
 'use client';
 
 import { Trophy } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import Sparkle from './sparkle';
 
 /**
  * MasonryGrid Component
  *
- * A true masonry layout using Masonry.js library for displaying images with preserved aspect ratios.
- * Based on the official Masonry documentation: https://masonry.desandro.com/
+ * A responsive masonry layout for displaying images with preserved aspect ratios.
+ * Uses CSS columns for a simple, reliable masonry effect.
  *
  * @param {Object} props
  * @param {Array} props.items - Array of image objects to display
@@ -24,8 +24,6 @@ export default function MasonryGrid({
   renderItem,
   showAnimation = false,
 }) {
-  const containerRef = useRef(null);
-  const masonryRef = useRef(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [imageDimensions, setImageDimensions] = useState({});
@@ -68,68 +66,6 @@ export default function MasonryGrid({
 
     loadImageDimensions();
   }, [items]);
-
-  // Initialize Masonry when images are loaded and dimensions are available
-  useEffect(() => {
-    if (!loading && items.length > 0 && containerRef.current) {
-      // Dynamically import Masonry to avoid SSR issues
-      import('masonry-layout').then((Masonry) => {
-        // Destroy existing masonry instance if it exists
-        if (masonryRef.current) {
-          masonryRef.current.destroy();
-        }
-
-        // Initialize new masonry instance
-        const msnry = new Masonry.default(containerRef.current, {
-          itemSelector: '.masonry-item',
-          columnWidth: 200,
-          gutter: gap,
-          percentPosition: true,
-          fitWidth: true,
-        });
-
-        masonryRef.current = msnry;
-
-        // Trigger layout after images load
-        const images = containerRef.current.querySelectorAll('.masonry-item img');
-        let loadedCount = 0;
-
-        const handleImageLoad = () => {
-          loadedCount++;
-          if (loadedCount === images.length) {
-            msnry.layout();
-          }
-        };
-
-        images.forEach((img) => {
-          if (img.complete) {
-            handleImageLoad();
-          } else {
-            img.addEventListener('load', handleImageLoad);
-          }
-        });
-      });
-    }
-
-    // Cleanup on unmount
-    return () => {
-      if (masonryRef.current) {
-        masonryRef.current.destroy();
-      }
-    };
-  }, [loading, items, gap]);
-
-  // Handle window resize to update masonry layout
-  useEffect(() => {
-    const handleResize = () => {
-      if (masonryRef.current) {
-        masonryRef.current.layout();
-      }
-    };
-
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
 
   // Default render function for items
   const defaultRenderItem = (item, index) => {
@@ -378,43 +314,47 @@ export default function MasonryGrid({
 
   const masonryItems = createMasonryLayout();
 
-  return (
-    <div className="w-full max-w-full overflow-hidden">
-      <div
-        ref={containerRef}
-        className="masonry-grid"
-        style={{
-          width: '100%',
-          maxWidth: '100%',
-        }}
-      >
-        {masonryItems.map((item, itemIndex) => {
-          const dimensions = imageDimensions[item.id];
-          const aspectRatio = dimensions?.aspectRatio || 0.75;
+  // Simple flexbox layout - no complex calculations needed
 
-          return (
+  return (
+    <div
+      className="w-full overflow-visible"
+      style={{
+        display: 'flex',
+        flexWrap: 'wrap',
+        justifyContent: 'flex-start',
+        alignItems: 'flex-start',
+        gap: `${gap}px`,
+        width: '100%',
+        minHeight: '200px',
+      }}
+    >
+      {masonryItems.map((item, itemIndex) => {
+        const dimensions = imageDimensions[item.id];
+        const aspectRatio = dimensions?.aspectRatio || 0.75;
+
+        return (
+          <div
+            key={`item-${item.id || itemIndex}`}
+            className="masonry-item"
+            style={{
+              flex: '1 1 0',
+              minWidth: '160px',
+              boxSizing: 'border-box',
+            }}
+          >
             <div
-              key={`item-${item.id || itemIndex}`}
-              className="masonry-item"
               style={{
-                width: '200px',
-                marginBottom: `${gap}px`,
-                marginRight: `${gap}px`,
+                aspectRatio: aspectRatio.toString(),
+                width: '100%',
+                height: 'auto',
               }}
             >
-              <div
-                style={{
-                  aspectRatio: aspectRatio.toString(),
-                  width: '100%',
-                  height: 'auto',
-                }}
-              >
-                {renderItem ? renderItem(item, itemIndex) : defaultRenderItem(item, itemIndex)}
-              </div>
+              {renderItem ? renderItem(item, itemIndex) : defaultRenderItem(item, itemIndex)}
             </div>
-          );
-        })}
-      </div>
+          </div>
+        );
+      })}
     </div>
   );
 }
