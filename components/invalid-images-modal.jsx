@@ -46,5 +46,3 @@ export default function InvalidImagesModal({ isOpen, invalid = [], onRemove, onR
     </div>
   );
 }
-
-

@@ -15,6 +15,7 @@ import { scrollToTop } from '@/utils/scroll-utils';
 import { useCallback, useEffect, useState } from 'react';
 import ComparisonTypePage from './comparison-type-page.jsx';
 import ComparisonView from './comparison-view.jsx';
+import FullScreenCompare from './fullscreen-compare.jsx';
 import DimensionWarningModal from './dimension-warning-modal.jsx';
 import IntroPage from './intro-page.jsx';
 import ResultsPage from './results-page.jsx';
@@ -877,6 +878,20 @@ export default function PhotoCompare() {
               </button>
             </div>
           )}
+
+          {/* Fullscreen controls */}
+          <FullScreenCompare
+            progress={progress}
+            remaining={remainingPairs.length}
+            leftImage={currentPair[0]}
+            rightImage={currentPair[1]}
+            onSelectLeft={() => {
+              if (!isDone) selectWinner(currentPair[0].id)
+            }}
+            onSelectRight={() => {
+              if (!isDone) selectWinner(currentPair[1].id)
+            }}
+          />
 
           <ComparisonView
             leftImage={currentPair[0]}

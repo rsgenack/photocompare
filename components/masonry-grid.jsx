@@ -184,6 +184,8 @@ export default function MasonryGrid({
             maxHeight: isWinner ? `${winnerMaxHeight}px` : undefined,
             objectFit: isSvg ? 'contain' : 'cover',
           }}
+          loading="lazy"
+          decoding="async"
         />
 
         {/* Rank indicator */}

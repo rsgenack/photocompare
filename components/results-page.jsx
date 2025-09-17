@@ -4,6 +4,7 @@ import { scrollToTop } from '@/utils/scroll-utils';
 import { ArrowRight, FileJson, FileSpreadsheet, Trophy } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import MasonryGrid from './masonry-grid.jsx';
+import FullScreenResults from './fullscreen-results.jsx';
 import Sparkle from './sparkle.jsx';
 
 export default function ResultsPage({
@@ -217,33 +218,33 @@ export default function ResultsPage({
         <div className="relative overflow-hidden w-full h-full border-2 border-black flex items-center justify-center bg-white z-10">
           <img
             src={item.url || '/placeholder.svg'}
-            alt={`Rank #${item.rank} photo`}
+          alt={`Rank #${item.rank} photo`}
             className="w-full h-full object-cover"
             style={{
               width: '100%',
               height: '100%',
               objectFit: isSvg ? 'contain' : 'cover',
             }}
-          />
+        />
 
-          {/* Rank indicator */}
-          <div
-            className="absolute top-3 right-3 w-10 h-10 rounded-full flex items-center justify-center font-bold text-white"
-            style={{
-              backgroundColor: color,
+        {/* Rank indicator */}
+        <div
+          className="absolute top-3 right-3 w-10 h-10 rounded-full flex items-center justify-center font-bold text-white"
+          style={{
+            backgroundColor: color,
               fontSize: isWinner ? '20px' : '16px',
-            }}
-          >
-            {item.rank}
-          </div>
+          }}
+        >
+          {item.rank}
+        </div>
 
           {/* Trophy for #1 */}
-          {isWinner && showAnimation && (
+        {isWinner && showAnimation && (
             <div className="absolute top-3 left-3 bg-white/80 backdrop-blur-sm p-2 rounded-full">
               <Trophy className="h-6 w-6" style={{ color: '#ffba08' }} />
             </div>
           )}
-        </div>
+          </div>
       </div>
     );
   };
@@ -293,57 +294,59 @@ export default function ResultsPage({
           </h1>
 
           <div className="border-t-2 border-b-2 border-black py-4 mb-12 flex flex-col sm:flex-row justify-between items-center gap-4">
-            <div className="text-lg font-bold">TOTAL PHOTOS: {rankedImages.length}</div>
-            <div className="text-lg font-bold">WINNER: PHOTO #{rankedImages[0]?.rank || 1}</div>
-          </div>
-        </div>
-
-        {/* Masonry Grid Layout */}
-        <div className="px-4 mb-16">
-          <MasonryGrid
-            items={rankedImages}
-            gap={12}
-            columns={{ sm: 2, md: 3, lg: 4, xl: 5, '2xl': 6 }}
-            showAnimation={showAnimation}
-            renderItem={customRenderItem}
-          />
-        </div>
-
-        {/* Download Section */}
-        <div className="px-4 mb-12">
-          <div className="border-2 border-black p-8">
-            <h2 className="text-2xl font-bold mb-6 text-center font-display">DOWNLOAD RESULTS</h2>
-            <div className="flex flex-col md:flex-row gap-6">
-              <button
-                onClick={() => downloadResults('csv')}
-                className="flex-1 flex items-center justify-center py-4 px-6 bg-white text-black font-bold rounded-full border-2 border-black hover:bg-gray-100 transition-all duration-200"
-              >
-                <FileSpreadsheet className="h-6 w-6 mr-2" />
-                DOWNLOAD CSV
-              </button>
-
-              <button
-                onClick={() => downloadResults('json')}
-                className="flex-1 flex items-center justify-center py-4 px-6 bg-yellow_green text-black font-bold rounded-full hover:shadow-lg transition-all duration-200"
-              >
-                <FileJson className="h-6 w-6 mr-2" />
-                DOWNLOAD JSON
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Reset Button */}
-        <div className="px-4 flex justify-center mb-12">
-          <button
-            onClick={handleResetComparison}
-            className="px-12 py-4 text-xl font-bold text-black bg-yellow_green rounded-full hover:shadow-lg transition-all duration-200 flex items-center"
-          >
-            START NEW COMPARISON
-            <ArrowRight className="ml-2 h-6 w-6" />
-          </button>
+          <div className="text-lg font-bold">TOTAL PHOTOS: {rankedImages.length}</div>
+          <div className="text-lg font-bold">WINNER: PHOTO #{rankedImages[0]?.rank || 1}</div>
         </div>
       </div>
+
+      {/* Masonry Grid Layout */}
+        <div className="px-4 mb-16">
+          <FullScreenResults>
+        <MasonryGrid
+          items={rankedImages}
+          gap={12}
+              columns={{ sm: 2, md: 3, lg: 4, xl: 5, '2xl': 6 }}
+          showAnimation={showAnimation}
+          renderItem={customRenderItem}
+        />
+          </FullScreenResults>
+      </div>
+
+      {/* Download Section */}
+        <div className="px-4 mb-12">
+          <div className="border-2 border-black p-8">
+        <h2 className="text-2xl font-bold mb-6 text-center font-display">DOWNLOAD RESULTS</h2>
+        <div className="flex flex-col md:flex-row gap-6">
+          <button
+                onClick={() => downloadResults('csv')}
+            className="flex-1 flex items-center justify-center py-4 px-6 bg-white text-black font-bold rounded-full border-2 border-black hover:bg-gray-100 transition-all duration-200"
+          >
+            <FileSpreadsheet className="h-6 w-6 mr-2" />
+            DOWNLOAD CSV
+          </button>
+
+          <button
+                onClick={() => downloadResults('json')}
+            className="flex-1 flex items-center justify-center py-4 px-6 bg-yellow_green text-black font-bold rounded-full hover:shadow-lg transition-all duration-200"
+          >
+            <FileJson className="h-6 w-6 mr-2" />
+            DOWNLOAD JSON
+          </button>
+            </div>
+        </div>
+      </div>
+
+      {/* Reset Button */}
+        <div className="px-4 flex justify-center mb-12">
+        <button
+          onClick={handleResetComparison}
+          className="px-12 py-4 text-xl font-bold text-black bg-yellow_green rounded-full hover:shadow-lg transition-all duration-200 flex items-center"
+        >
+          START NEW COMPARISON
+          <ArrowRight className="ml-2 h-6 w-6" />
+        </button>
+      </div>
+    </div>
     </div>
   );
 }
