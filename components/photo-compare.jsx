@@ -7,7 +7,8 @@ import {
   DEFAULT_RATING,
   DEFAULT_UNCERTAINTY,
   findMostInformativePair,
-  updateRatings,
+  hasEnoughConfidenceEnhanced,
+  updateRatingsAdaptive,
   updateUncertainties,
 } from '@/utils/elo-rating';
 import { scrollToTop } from '@/utils/scroll-utils';
@@ -110,6 +111,16 @@ export default function PhotoCompare() {
     }
   }, [uploadedImages, completedComparisons]);
 
+  // Helper to compute median confidence for current images
+  const getMedianConfidence = (images) => {
+    if (!images || images.length === 0) return 0;
+    const confs = images
+      .map((img) => calculateConfidence(img.uncertainty ?? DEFAULT_UNCERTAINTY))
+      .sort((a, b) => a - b);
+    const mid = Math.floor(confs.length / 2);
+    return confs.length % 2 === 0 ? Math.round((confs[mid - 1] + confs[mid]) / 2) : confs[mid];
+  };
+
   // Check if images have different dimensions
   const checkImageDimensions = useCallback(() => {
     const checkDimensions = async () => {
@@ -203,9 +214,11 @@ export default function PhotoCompare() {
         const winnerUnc = winnerImage?.uncertainty ?? DEFAULT_UNCERTAINTY;
         const loserUnc = loserImage?.uncertainty ?? DEFAULT_UNCERTAINTY;
 
-        const { winner: newWinnerRating, loser: newLoserRating } = updateRatings(
+        const { winner: newWinnerRating, loser: newLoserRating } = updateRatingsAdaptive(
           winnerRating,
           loserRating,
+          winnerUnc,
+          loserUnc,
         );
         const { winner: newWinnerUnc, loser: newLoserUnc } = updateUncertainties(
           winnerUnc,
@@ -634,9 +647,17 @@ export default function PhotoCompare() {
       const newProgress = (completedCount / allPairs.length) * 100;
       setProgress(newProgress);
       // Auto-finish when we have completed all pairs
-      if (completedCount >= allPairs.length && step === 'compare') {
-        calculateFinalRankings();
-        changeStep('results');
+      if (step === 'compare') {
+        // Stronger stop condition for full ordering
+        const canStop = hasEnoughConfidenceEnhanced(uploadedImages, {
+          minConfidence: confidenceThreshold,
+          minComparisons,
+          adjacentMargin: 30,
+        });
+        if (canStop || completedCount >= allPairs.length) {
+          calculateFinalRankings();
+          changeStep('results');
+        }
       }
     }
   }, [completedComparisons, allPairs.length]);
@@ -688,6 +709,27 @@ export default function PhotoCompare() {
   if (step === 'type') {
     return (
       <>
+        {/* Mini Home Button - toned down, non-sticky */}
+        <button
+          onClick={() => changeStep('type')}
+          className="mt-4 ml-4 hover:opacity-80 transition-opacity duration-150 text-left"
+        >
+          <span
+            className="relative inline-block font-bold break-words"
+            style={{
+              fontSize: '1.25rem',
+              lineHeight: '1.3rem',
+              backgroundImage:
+                'linear-gradient(to right, rgb(209, 17, 73), rgb(241, 113, 5), rgb(255, 186, 8), rgb(177, 207, 95), rgb(144, 224, 243), rgb(123, 137, 239))',
+              backgroundClip: 'text',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              opacity: 0.85,
+            }}
+          >
+            VOTOGRAPHER
+          </span>
+        </button>
         <ErrorMessage />
         <ComparisonTypePage
           comparisonType={comparisonType}
@@ -707,6 +749,27 @@ export default function PhotoCompare() {
   if (step === 'upload') {
     return (
       <>
+        {/* Mini Home Button - toned down, non-sticky */}
+        <button
+          onClick={() => changeStep('type')}
+          className="mt-4 ml-4 hover:opacity-80 transition-opacity duration-150 text-left"
+        >
+          <span
+            className="relative inline-block font-bold break-words"
+            style={{
+              fontSize: '1.25rem',
+              lineHeight: '1.3rem',
+              backgroundImage:
+                'linear-gradient(to right, rgb(209, 17, 73), rgb(241, 113, 5), rgb(255, 186, 8), rgb(177, 207, 95), rgb(144, 224, 243), rgb(123, 137, 239))',
+              backgroundClip: 'text',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              opacity: 0.85,
+            }}
+          >
+            VOTOGRAPHER
+          </span>
+        </button>
         <ErrorMessage />
         <UploadPage
           uploadedImages={uploadedImages}
@@ -756,7 +819,32 @@ export default function PhotoCompare() {
 
           <div className="border-t-2 border-b-2 border-black py-3 md:py-4 flex flex-col md:flex-row justify-between items-center gap-2 mb-4 md:mb-6">
             <div className="text-base md:text-lg font-medium text-black">
-              {remainingPairs.length} COMPARISONS REMAINING
+              {(() => {
+                const base = remainingPairs.length;
+                if (base === 0) return 0;
+                const canStop = hasEnoughConfidenceEnhanced(uploadedImages, {
+                  minConfidence: confidenceThreshold,
+                  minComparisons,
+                  adjacentMargin: 30,
+                });
+                if (canStop) return 0;
+                const median = getMedianConfidence(uploadedImages);
+                const baseline = 50; // min confidence baseline
+                const target = Math.max(baseline + 1, confidenceThreshold);
+                const ratio = Math.max(0, Math.min(1, (median - baseline) / (target - baseline)));
+                // Scale down remaining up to 50% as confidence approaches threshold
+                let effective = Math.ceil(base * (1 - 0.5 * ratio));
+                // Ensure per-image coverage requirement isn’t under-reported
+                const coveragePairs = Math.ceil(
+                  uploadedImages.reduce(
+                    (sum, img) => sum + Math.max(0, minComparisons - (img.comparisons || 0)),
+                    0,
+                  ) / 2,
+                );
+                effective = Math.max(coveragePairs, Math.min(base, effective));
+                return effective;
+              })()}{' '}
+              COMPARISONS REMAINING
             </div>
             <div className="text-base md:text-lg font-medium text-black">
               {Math.min(Math.round(progress), 100)}% COMPLETE

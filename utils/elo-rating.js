@@ -6,13 +6,15 @@
  */
 
 // Default K-factor (determines how much ratings change after each comparison)
-export const DEFAULT_K = 32
+export const DEFAULT_K = 32;
+export const MIN_K = 8;
+export const MAX_K = 48;
 
 // Default starting rating
-export const DEFAULT_RATING = 1400
+export const DEFAULT_RATING = 1400;
 
 // Default uncertainty (higher means less confident in the rating)
-export const DEFAULT_UNCERTAINTY = 400
+export const DEFAULT_UNCERTAINTY = 400;
 
 /**
  * Calculate the expected score (probability of winning) for a player
@@ -21,7 +23,7 @@ export const DEFAULT_UNCERTAINTY = 400
  * @returns {number} - Expected score between 0 and 1
  */
 export function calculateExpectedScore(ratingA, ratingB) {
-  return 1 / (1 + Math.pow(10, (ratingB - ratingA) / 400))
+  return 1 / (1 + Math.pow(10, (ratingB - ratingA) / 400));
 }
 
 /**
@@ -32,16 +34,38 @@ export function calculateExpectedScore(ratingA, ratingB) {
  * @returns {object} - New ratings for winner and loser
  */
 export function updateRatings(ratingWinner, ratingLoser, kFactor = DEFAULT_K) {
-  const expectedWinner = calculateExpectedScore(ratingWinner, ratingLoser)
-  const expectedLoser = calculateExpectedScore(ratingLoser, ratingWinner)
+  const expectedWinner = calculateExpectedScore(ratingWinner, ratingLoser);
+  const expectedLoser = calculateExpectedScore(ratingLoser, ratingWinner);
 
-  const newRatingWinner = Math.round(ratingWinner + kFactor * (1 - expectedWinner))
-  const newRatingLoser = Math.round(ratingLoser + kFactor * (0 - expectedLoser))
+  const newRatingWinner = Math.round(ratingWinner + kFactor * (1 - expectedWinner));
+  const newRatingLoser = Math.round(ratingLoser + kFactor * (0 - expectedLoser));
 
   return {
     winner: newRatingWinner,
     loser: newRatingLoser,
-  }
+  };
+}
+
+/**
+ * Adaptive update that scales K by uncertainty so uncertain items move faster
+ * while stable ones move slower. Backwards-compatible with the classic update.
+ * @param {number} ratingWinner
+ * @param {number} ratingLoser
+ * @param {number} uncertaintyWinner
+ * @param {number} uncertaintyLoser
+ * @returns {{winner:number, loser:number}}
+ */
+export function updateRatingsAdaptive(
+  ratingWinner,
+  ratingLoser,
+  uncertaintyWinner = DEFAULT_UNCERTAINTY,
+  uncertaintyLoser = DEFAULT_UNCERTAINTY,
+) {
+  // Scale K by mean uncertainty in [MIN_K, MAX_K]
+  const meanUnc = Math.max(50, (uncertaintyWinner + uncertaintyLoser) / 2);
+  const scale = meanUnc / DEFAULT_UNCERTAINTY; // 0..1
+  const k = Math.max(MIN_K, Math.min(MAX_K, Math.round(DEFAULT_K * scale)));
+  return updateRatings(ratingWinner, ratingLoser, k);
 }
 
 /**
@@ -52,13 +76,13 @@ export function updateRatings(ratingWinner, ratingLoser, kFactor = DEFAULT_K) {
  */
 export function updateUncertainties(uncertaintyWinner, uncertaintyLoser) {
   // Reduce uncertainty more when it's higher
-  const newUncertaintyWinner = Math.max(uncertaintyWinner * 0.95, 50)
-  const newUncertaintyLoser = Math.max(uncertaintyLoser * 0.95, 50)
+  const newUncertaintyWinner = Math.max(uncertaintyWinner * 0.95, 50);
+  const newUncertaintyLoser = Math.max(uncertaintyLoser * 0.95, 50);
 
   return {
     winner: newUncertaintyWinner,
     loser: newUncertaintyLoser,
-  }
+  };
 }
 
 /**
@@ -74,23 +98,53 @@ export function calculateInformationGain(imageA, imageB) {
   // 2. Uncertainties are high (we're not confident in current ratings)
   // 3. Images haven't been compared many times
 
-  const ratingDiff = Math.abs(imageA.rating - imageB.rating)
-  const combinedUncertainty = imageA.uncertainty + imageB.uncertainty
-  const combinedComparisons = (imageA.comparisons || 0) + (imageB.comparisons || 0)
+  const ratingDiff = Math.abs(imageA.rating - imageB.rating);
+  const combinedUncertainty = imageA.uncertainty + imageB.uncertainty;
+  const combinedComparisons = (imageA.comparisons || 0) + (imageB.comparisons || 0);
 
   // Normalize rating difference (closer to 0 is better)
-  const normalizedRatingDiff = Math.max(0, 1 - ratingDiff / 400)
+  const normalizedRatingDiff = Math.max(0, 1 - ratingDiff / 400);
 
   // Weight factors
-  const RATING_WEIGHT = 0.4
-  const UNCERTAINTY_WEIGHT = 0.4
-  const COMPARISON_WEIGHT = 0.2
+  const RATING_WEIGHT = 0.4;
+  const UNCERTAINTY_WEIGHT = 0.4;
+  const COMPARISON_WEIGHT = 0.2;
 
   return (
     RATING_WEIGHT * normalizedRatingDiff +
     UNCERTAINTY_WEIGHT * (combinedUncertainty / (2 * DEFAULT_UNCERTAINTY)) +
     COMPARISON_WEIGHT * (1 / (combinedComparisons + 1))
-  )
+  );
+}
+
+/**
+ * Enhanced information score that prefers pairs with overlapping rating intervals
+ * and boosts items with low comparison counts for better coverage.
+ */
+function calculateEnhancedPairScore(imageA, imageB) {
+  const base = calculateInformationGain(imageA, imageB);
+
+  // Intervals based on uncertainty
+  const aLow = imageA.rating - imageA.uncertainty;
+  const aHigh = imageA.rating + imageA.uncertainty;
+  const bLow = imageB.rating - imageB.uncertainty;
+  const bHigh = imageB.rating + imageB.uncertainty;
+
+  const overlaps = Math.max(0, Math.min(aHigh, bHigh) - Math.max(aLow, bLow));
+  const separation = Math.max(0, Math.max(aLow, bLow) - Math.min(aHigh, bHigh));
+
+  // If clearly separated, penalize (less informative)
+  const separationPenalty = separation > 60 ? 0.2 : separation > 30 ? 0.5 : 1;
+
+  // If intervals overlap, reward (more informative)
+  const overlapBoost = overlaps > 0 ? 1.2 : 1.0;
+
+  // Low-coverage boost favors images with fewer comparisons
+  const aC = imageA.comparisons || 0;
+  const bC = imageB.comparisons || 0;
+  const lowCoverageBoost = 1 + 0.5 * (1 / (1 + Math.min(aC, bC)));
+
+  return base * separationPenalty * overlapBoost * lowCoverageBoost;
 }
 
 /**
@@ -100,27 +154,27 @@ export function calculateInformationGain(imageA, imageB) {
  * @returns {Array} - The most informative pair [leftId, rightId]
  */
 export function findMostInformativePair(images, remainingPairs) {
-  if (remainingPairs.length === 0) return null
+  if (remainingPairs.length === 0) return null;
 
-  let bestPair = remainingPairs[0]
-  let highestInfoGain = -1
+  let bestPair = remainingPairs[0];
+  let highestInfoGain = -1;
 
   for (const pair of remainingPairs) {
-    const [leftId, rightId] = pair
-    const leftImage = images.find((img) => img.id === leftId)
-    const rightImage = images.find((img) => img.id === rightId)
+    const [leftId, rightId] = pair;
+    const leftImage = images.find((img) => img.id === leftId);
+    const rightImage = images.find((img) => img.id === rightId);
 
-    if (!leftImage || !rightImage) continue
+    if (!leftImage || !rightImage) continue;
 
-    const infoGain = calculateInformationGain(leftImage, rightImage)
+    const infoGain = calculateEnhancedPairScore(leftImage, rightImage);
 
     if (infoGain > highestInfoGain) {
-      highestInfoGain = infoGain
-      bestPair = pair
+      highestInfoGain = infoGain;
+      bestPair = pair;
     }
   }
 
-  return bestPair
+  return bestPair;
 }
 
 /**
@@ -130,9 +184,9 @@ export function findMostInformativePair(images, remainingPairs) {
  */
 export function calculateConfidence(uncertainty) {
   // Map uncertainty from [50, DEFAULT_UNCERTAINTY] to [100, 0]
-  const normalizedUncertainty = Math.min(Math.max(uncertainty, 50), DEFAULT_UNCERTAINTY)
-  const confidencePercent = 100 - ((normalizedUncertainty - 50) / (DEFAULT_UNCERTAINTY - 50)) * 100
-  return Math.round(confidencePercent)
+  const normalizedUncertainty = Math.min(Math.max(uncertainty, 50), DEFAULT_UNCERTAINTY);
+  const confidencePercent = 100 - ((normalizedUncertainty - 50) / (DEFAULT_UNCERTAINTY - 50)) * 100;
+  return Math.round(confidencePercent);
 }
 
 /**
@@ -143,12 +197,41 @@ export function calculateConfidence(uncertainty) {
  * @returns {boolean} - True if we have enough confidence
  */
 export function hasEnoughConfidence(images, minConfidence = 70, minComparisons = 3) {
-  // Check if all images have been compared at least minComparisons times
-  const allComparedEnough = images.every((img) => (img.comparisons || 0) >= minComparisons)
+  return hasEnoughConfidenceEnhanced(images, { minConfidence, minComparisons });
+}
 
-  // Check if average confidence is above threshold
-  const avgConfidence =
-    images.reduce((sum, img) => sum + calculateConfidence(img.uncertainty || DEFAULT_UNCERTAINTY), 0) / images.length
+/**
+ * Stronger stopping rule for full ordering.
+ * - Everyone seen at least minComparisons
+ * - Median confidence ≥ minConfidence
+ * - Adjacent items in sorted ratings are sufficiently separated
+ */
+export function hasEnoughConfidenceEnhanced(
+  images,
+  { minConfidence = 70, minComparisons = 3, adjacentMargin = 30 } = {},
+) {
+  if (!images || images.length === 0) return false;
 
-  return allComparedEnough && avgConfidence >= minConfidence
+  const allComparedEnough = images.every((img) => (img.comparisons || 0) >= minComparisons);
+  if (!allComparedEnough) return false;
+
+  // Median confidence
+  const confidences = images
+    .map((img) => calculateConfidence(img.uncertainty || DEFAULT_UNCERTAINTY))
+    .sort((a, b) => a - b);
+  const mid = Math.floor(confidences.length / 2);
+  const median =
+    confidences.length % 2 === 0 ? (confidences[mid - 1] + confidences[mid]) / 2 : confidences[mid];
+  if (median < minConfidence) return false;
+
+  // Adjacent separation check
+  const sorted = [...images].sort((a, b) => (b.rating || 0) - (a.rating || 0));
+  for (let i = 0; i < sorted.length - 1; i++) {
+    const a = sorted[i];
+    const b = sorted[i + 1];
+    if ((a.rating || 0) - (b.rating || 0) < adjacentMargin) {
+      return false;
+    }
+  }
+  return true;
 }

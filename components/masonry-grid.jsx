@@ -1,7 +1,7 @@
 'use client';
 
 import { Trophy } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Sparkle from './sparkle';
 
 /**
@@ -27,10 +27,28 @@ export default function MasonryGrid({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [imageDimensions, setImageDimensions] = useState({});
+  const [columnCount, setColumnCount] = useState(4);
+  const gridRef = useRef(null);
+  const masonryRef = useRef(null);
+
+  // Calculate responsive column count
+  const getColumnCount = () => {
+    if (typeof window === 'undefined') return 4;
+    const width = window.innerWidth;
+    if (width < 640) return 1; // sm
+    if (width < 768) return 2; // md
+    if (width < 1024) return 3; // lg
+    if (width < 1280) return 4; // xl
+    return 5; // 2xl
+  };
 
   // Load image dimensions for proper aspect ratio sizing
   useEffect(() => {
-    if (items.length === 0) return;
+    if (items.length === 0) {
+      setImageDimensions({});
+      setLoading(false);
+      return;
+    }
 
     const loadImageDimensions = async () => {
       const dimensions = {};
@@ -67,22 +85,103 @@ export default function MasonryGrid({
     loadImageDimensions();
   }, [items]);
 
+  // Handle responsive column count
+  useEffect(() => {
+    const updateColumnCount = () => {
+      setColumnCount(getColumnCount());
+    };
+
+    updateColumnCount();
+    window.addEventListener('resize', updateColumnCount);
+    return () => window.removeEventListener('resize', updateColumnCount);
+  }, []);
+
+  // Initialize Masonry for width-based spanning (winner wider)
+  useEffect(() => {
+    if (!gridRef.current) return;
+
+    let cleanup = () => {};
+    (async () => {
+      try {
+        const Masonry = (await import('masonry-layout')).default;
+        const imagesLoaded = (await import('imagesloaded')).default;
+
+        // Destroy any existing instance
+        if (masonryRef.current) {
+          masonryRef.current.destroy();
+          masonryRef.current = null;
+        }
+
+        // Wait for images, then init
+        imagesLoaded(gridRef.current, () => {
+          masonryRef.current = new Masonry(gridRef.current, {
+            itemSelector: '.masonry-item',
+            columnWidth: '.masonry-sizer',
+            percentPosition: true,
+            gutter: 12,
+            horizontalOrder: true,
+          });
+          masonryRef.current.layout();
+        });
+
+        const onResize = () => {
+          if (masonryRef.current) masonryRef.current.layout();
+        };
+        window.addEventListener('resize', onResize);
+        cleanup = () => {
+          window.removeEventListener('resize', onResize);
+          if (masonryRef.current) {
+            masonryRef.current.destroy();
+            masonryRef.current = null;
+          }
+        };
+      } catch (err) {
+        console.error('Masonry init error:', err);
+      }
+    })();
+
+    return () => cleanup();
+  }, [items, columnCount, gap]);
+
+  // Helper function to get color based on rank
+  const getColorByRank = (rank) => {
+    const colors = [
+      '#ffba08', // selective_yellow
+      '#7b89ef', // tropical_indigo
+      '#d11149', // cardinal
+      '#f17105', // pumpkin
+      '#b1cf5f', // yellow_green
+      '#90e0f3', // non_photo_blue
+    ];
+    return colors[(rank - 1) % colors.length];
+  };
+
+  // Create masonry layout with sorted items
+  const createMasonryLayout = () => {
+    // Sort items by rank to maintain order
+    return [...items].sort((a, b) => (a.rank || 0) - (b.rank || 0));
+  };
+
   // Default render function for items
   const defaultRenderItem = (item, index) => {
     const isWinner = item.rank === 1;
     const color = getColorByRank(item.rank);
     const isSvg =
       (item?.file && item.file.type === 'image/svg+xml') || /\.svg($|\?)/i.test(item?.url || '');
+    const dimensions = imageDimensions[item.id];
+    const aspectRatio = dimensions?.aspectRatio || 0.75;
+    const winnerMaxHeight = columnCount >= 4 ? 420 : columnCount >= 3 ? 360 : 320;
 
     return (
-      <div className="relative group overflow-hidden w-full h-full border-2 border-black flex items-center justify-center bg-white">
+      <div className="relative group overflow-hidden w-full border-2 border-black flex items-center justify-center bg-white">
         <img
           src={item.url || '/placeholder.svg'}
           alt={`Rank #${item.rank} photo`}
-          className="w-full h-full"
+          className="w-full h-auto"
           style={{
             width: '100%',
-            height: '100%',
+            height: 'auto',
+            maxHeight: isWinner ? `${winnerMaxHeight}px` : undefined,
             objectFit: isSvg ? 'contain' : 'cover',
           }}
         />
@@ -266,25 +365,6 @@ export default function MasonryGrid({
     );
   };
 
-  // Helper function to get color based on rank
-  const getColorByRank = (rank) => {
-    const colors = [
-      '#ffba08', // selective_yellow
-      '#7b89ef', // tropical_indigo
-      '#d11149', // cardinal
-      '#f17105', // pumpkin
-      '#b1cf5f', // yellow_green
-      '#90e0f3', // non_photo_blue
-    ];
-    return colors[(rank - 1) % colors.length];
-  };
-
-  // Create masonry layout with sorted items
-  const createMasonryLayout = () => {
-    // Sort items by rank to maintain order
-    return [...items].sort((a, b) => (a.rank || 0) - (b.rank || 0));
-  };
-
   // Handle loading state
   if (loading) {
     return (
@@ -314,44 +394,33 @@ export default function MasonryGrid({
 
   const masonryItems = createMasonryLayout();
 
-  // Simple flexbox layout - no complex calculations needed
-
   return (
     <div
+      ref={gridRef}
       className="w-full overflow-visible"
-      style={{
-        display: 'flex',
-        flexWrap: 'wrap',
-        justifyContent: 'flex-start',
-        alignItems: 'flex-start',
-        gap: `${gap}px`,
-        width: '100%',
-        minHeight: '200px',
-      }}
+      style={{ width: '100%', boxSizing: 'border-box', padding: 0, margin: '0 auto' }}
     >
+      {/* sizer defines the base column width; includes gap compensation */}
+      {(() => {
+        const cols = Math.max(columnCount, 1);
+        const sizerWidth = `calc((100% - ${(cols - 1) * gap}px) / ${cols})`;
+        return <div className="masonry-sizer" style={{ width: sizerWidth }} />;
+      })()}
+
       {masonryItems.map((item, itemIndex) => {
-        const dimensions = imageDimensions[item.id];
-        const aspectRatio = dimensions?.aspectRatio || 0.75;
+        const isWinner = item.rank === 1;
+        const cols = Math.max(columnCount, 1);
+        const span = isWinner && cols > 1 ? 2 : 1;
+        const base = `calc((100% - ${(cols - 1) * gap}px) / ${cols})`;
+        const width = span === 1 ? base : `calc(${base} * 2 + ${gap}px)`;
 
         return (
           <div
             key={`item-${item.id || itemIndex}`}
-            className="masonry-item"
-            style={{
-              flex: '1 1 0',
-              minWidth: '160px',
-              boxSizing: 'border-box',
-            }}
+            className={`masonry-item ${isWinner ? 'masonry-item--wide' : ''}`}
+            style={{ width, marginBottom: `${gap}px` }}
           >
-            <div
-              style={{
-                aspectRatio: aspectRatio.toString(),
-                width: '100%',
-                height: 'auto',
-              }}
-            >
-              {renderItem ? renderItem(item, itemIndex) : defaultRenderItem(item, itemIndex)}
-            </div>
+            {renderItem ? renderItem(item, itemIndex) : defaultRenderItem(item, itemIndex)}
           </div>
         );
       })}
