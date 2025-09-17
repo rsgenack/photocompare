@@ -891,6 +891,8 @@ export default function PhotoCompare() {
             onSelectRight={() => {
               if (!isDone) selectWinner(currentPair[1].id)
             }}
+            onRemoveLeft={(id) => handleRemoveImage(id)}
+            onRemoveRight={(id) => handleRemoveImage(id)}
           />
 
           <ComparisonView
