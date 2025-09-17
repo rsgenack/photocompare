@@ -15,8 +15,9 @@ import { scrollToTop } from '@/utils/scroll-utils';
 import { useCallback, useEffect, useState } from 'react';
 import ComparisonTypePage from './comparison-type-page.jsx';
 import ComparisonView from './comparison-view.jsx';
-import FullScreenCompare from './fullscreen-compare.jsx';
 import DimensionWarningModal from './dimension-warning-modal.jsx';
+import FullScreenCompare from './fullscreen-compare.jsx';
+import { formatNumber } from '@/utils/format';
 import IntroPage from './intro-page.jsx';
 import ResultsPage from './results-page.jsx';
 import SplashScreen from './splash-screen.jsx';
@@ -843,12 +844,12 @@ export default function PhotoCompare() {
                   ) / 2,
                 );
                 effective = Math.max(coveragePairs, Math.min(base, effective));
-                return effective;
+                return formatNumber(effective);
               })()}{' '}
               COMPARISONS REMAINING
             </div>
             <div className="text-base md:text-lg font-medium text-black">
-              {Math.min(Math.round(progress), 100)}% COMPLETE
+              {formatNumber(Math.min(Math.round(progress), 100))}% COMPLETE
             </div>
           </div>
 
@@ -882,14 +883,14 @@ export default function PhotoCompare() {
           {/* Fullscreen controls */}
           <FullScreenCompare
             progress={progress}
-            remaining={remainingPairs.length}
+            remaining={formatNumber(remainingPairs.length)}
             leftImage={currentPair[0]}
             rightImage={currentPair[1]}
             onSelectLeft={() => {
-              if (!isDone) selectWinner(currentPair[0].id)
+              if (!isDone) selectWinner(currentPair[0].id);
             }}
             onSelectRight={() => {
-              if (!isDone) selectWinner(currentPair[1].id)
+              if (!isDone) selectWinner(currentPair[1].id);
             }}
             onRemoveLeft={(id) => handleRemoveImage(id)}
             onRemoveRight={(id) => handleRemoveImage(id)}
