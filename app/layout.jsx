@@ -7,7 +7,7 @@ export const metadata = {
   description: 'Compare and rank your photos',
   generator: 'v0.dev',
   icons: {
-    icon: '/favicon.ico',
+    icon: '/favicon.png',
   },
   openGraph: {
     title: 'VOTOGRAPHER',
