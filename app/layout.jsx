@@ -3,6 +3,7 @@ import { Suspense } from 'react';
 import './globals.css';
 
 export const metadata = {
+  metadataBase: new URL('https://votographer.com'),
   title: 'VOTOGRAPHER',
   description: 'Compare and rank your photos',
   generator: 'v0.dev',
