@@ -12,11 +12,11 @@ export const metadata = {
   openGraph: {
     title: 'VOTOGRAPHER',
     description: 'Find your best photos, easily and enjoyably',
-    url: 'https://photocompare-qfb161gpp-rsgenacks-projects.vercel.app',
+    url: 'https://votographer.com',
     siteName: 'VOTOGRAPHER',
     images: [
       {
-        url: '/og-image.png',
+        url: '/VOTOGRAPHER_OG/facebook1200x630.png',
         width: 1200,
         height: 630,
         alt: 'VOTOGRAPHER Final Rankings',
@@ -29,7 +29,7 @@ export const metadata = {
     card: 'summary_large_image',
     title: 'VOTOGRAPHER',
     description: 'Find your best photos, easily and enjoyably',
-    images: ['/og-image.png'],
+    images: ['/VOTOGRAPHER_OG/facebook1200x630.png'],
   },
 };
 
