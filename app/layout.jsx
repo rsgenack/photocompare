@@ -9,7 +9,7 @@ export const metadata = {
   generator: 'v0.dev',
   icons: {
     icon: [
-      { url: '/favicon.svg', type: 'image/svg+xml' },
+      { url: '/favicon.png', type: 'image/png' },
       { url: '/favicon-32x32.png', sizes: '32x32', type: 'image/png' },
       { url: '/favicon-16x16.png', sizes: '16x16', type: 'image/png' },
       { url: '/apple-touch-icon.png', sizes: '180x180', rel: 'apple-touch-icon' },
@@ -57,12 +57,18 @@ export default function RootLayout({ children }) {
         <meta property="og:description" content="Find your best photos, easily and enjoyably" />
         <meta property="og:type" content="website" />
         <meta property="og:url" content="https://votographer.com" />
-        <meta property="og:image" content="https://votographer.com/VOTOGRAPHER_OG/facebook1200x630.png" />
+        <meta
+          property="og:image"
+          content="https://votographer.com/VOTOGRAPHER_OG/facebook1200x630.png"
+        />
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content="VOTOGRAPHER" />
         <meta name="twitter:description" content="Find your best photos, easily and enjoyably" />
-        <meta name="twitter:image" content="https://votographer.com/VOTOGRAPHER_OG/twittercropped2.png" />
-        <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+        <meta
+          name="twitter:image"
+          content="https://votographer.com/VOTOGRAPHER_OG/twittercropped2.png"
+        />
+        <link rel="icon" href="/favicon.png" type="image/png" />
         <link rel="icon" href="/favicon-32x32.png" sizes="32x32" type="image/png" />
         <link rel="icon" href="/favicon-16x16.png" sizes="16x16" type="image/png" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
