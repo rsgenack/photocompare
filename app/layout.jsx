@@ -1,8 +1,9 @@
-import "./globals.css"
+import Script from 'next/script';
+import './globals.css';
 
 export const metadata = {
-  title: "VOTOGRAPHER",
-  description: "Compare and rank your photos",
+  title: 'VOTOGRAPHER',
+  description: 'Compare and rank your photos',
   generator: 'v0.dev',
   icons: {
     icon: '/favicon.ico',
@@ -29,7 +30,7 @@ export const metadata = {
     description: 'Find your best photos, easily and enjoyably',
     images: ['/og-image.png'],
   },
-}
+};
 
 export default function RootLayout({ children }) {
   return (
@@ -43,14 +44,31 @@ export default function RootLayout({ children }) {
         />
       </head>
       <body className="min-h-screen">
+        {/* Google Analytics */}
+        <Script
+          id="ga-load"
+          strategy="afterInteractive"
+          src="https://www.googletagmanager.com/gtag/js?id=G-1006GRWNV2"
+        />
+        <Script id="ga-config" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-1006GRWNV2');
+          `}
+        </Script>
+        <GATracker />
         <main>{children}</main>
         <footer className="container mx-auto mt-12 text-center border-t border-black pt-4">
-          <p className="font-medium text-black font-sans">© {new Date().getFullYear()} VOTOGRAPHER | REBECCA GENACK</p>
+          <p className="font-medium text-black font-sans">
+            © {new Date().getFullYear()} VOTOGRAPHER | REBECCA GENACK
+          </p>
         </footer>
       </body>
     </html>
-  )
+  );
 }
 
-
-import './globals.css'
+import GATracker from '@/components/ga-tracker';
+import './globals.css';

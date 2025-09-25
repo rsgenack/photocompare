@@ -3,3 +3,5 @@ export function formatNumber(value) {
   if (Number.isNaN(n)) return '0';
   return new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 }).format(Math.round(n));
 }
+
+

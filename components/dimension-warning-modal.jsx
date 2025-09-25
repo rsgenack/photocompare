@@ -1,21 +1,21 @@
-"use client"
+'use client';
 
-import { X } from "lucide-react"
+import { X } from 'lucide-react';
 
 // Polaroid-inspired color palette
 const colors = {
-  coral: "rgb(255, 96, 55)", // Coral red
-  yellow: "rgb(253, 198, 0)", // Sunshine yellow
-  purple: "rgb(130, 36, 227)", // Purple
-  orange: "rgb(255, 150, 0)", // Orange
-  blue: "rgb(74, 144, 226)", // Blue
-  green: "rgb(80, 200, 120)", // Green
-  pink: "rgb(252, 82, 140)", // Pink
-  cyan: "rgb(0, 175, 240)", // Cyan
-}
+  coral: 'rgb(255, 96, 55)', // Coral red
+  yellow: 'rgb(253, 198, 0)', // Sunshine yellow
+  purple: 'rgb(130, 36, 227)', // Purple
+  orange: 'rgb(255, 150, 0)', // Orange
+  blue: 'rgb(74, 144, 226)', // Blue
+  green: 'rgb(80, 200, 120)', // Green
+  pink: 'rgb(252, 82, 140)', // Pink
+  cyan: 'rgb(0, 175, 240)', // Cyan
+};
 
 export default function DimensionWarningModal({ isOpen, onClose, onProceed, onRemoveUnmatched }) {
-  if (!isOpen) return null
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
@@ -55,12 +55,8 @@ export default function DimensionWarningModal({ isOpen, onClose, onProceed, onRe
         </div>
 
         <p className="text-gray-600 mb-6">
-          The images you've uploaded have different dimensions. For comparing different versions of the same photo, we
-          recommend using images with identical dimensions.
-        </p>
-
-        <p className="text-gray-600 mb-6">
-          Would you like to proceed with the "Different Photos" comparison type instead?
+          The images you've uploaded have different dimensions. You can continue anyway, but results
+          may be less precise. For best accuracy, use identical dimensions for version comparisons.
         </p>
 
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
@@ -76,10 +72,10 @@ export default function DimensionWarningModal({ isOpen, onClose, onProceed, onRe
             className="px-4 py-2 text-white rounded-2xl font-medium hover:opacity-90"
             style={{ background: `linear-gradient(to right, ${colors.pink}, ${colors.purple})` }}
           >
-            Proceed with Different Photos
+            Continue Anyway
           </button>
         </div>
       </div>
     </div>
-  )
+  );
 }

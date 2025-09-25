@@ -1,5 +1,6 @@
 'use client';
 
+import { trackEvent } from '@/utils/analytics';
 import { ArrowLeft, ArrowRight, Maximize, Minimize, X, ZoomIn, ZoomOut } from 'lucide-react';
 import Slider from 'rc-slider';
 import 'rc-slider/assets/index.css';
@@ -32,7 +33,11 @@ export default function ComparisonView({
 
   // Toggle fit mode
   const toggleFitMode = () => {
-    setFitMode((prev) => (prev === 'contain' ? 'cover' : 'contain'));
+    setFitMode((prev) => {
+      const next = prev === 'contain' ? 'cover' : 'contain';
+      trackEvent('fit_mode', { mode: next });
+      return next;
+    });
   };
 
   // Match image heights when both images are loaded
@@ -125,19 +130,46 @@ export default function ComparisonView({
 
       {/* Slider for version comparisons */}
       {aspectRatio && overlayMode === 'slider' ? (
-        <div className="w-full max-w-2xl mx-auto" style={{ aspectRatio: aspectRatio }}>
-          <ReactCompareImage
-            leftImage={leftSrc}
-            rightImage={rightSrc}
-            leftImageLabel="Left Version"
-            rightImageLabel="Right Version"
-            sliderLineWidth={4}
-            sliderLineColor="#d11149"
-            handleSize={48}
-            aspectRatio={aspectRatio}
-            onSliderPositionChange={(pos) => {}}
-            alt="Image comparison slider"
-          />
+        <div className="w-full max-w-2xl mx-auto">
+          {/* Mobile-only quick select buttons */}
+          <div className="flex justify-between items-center mb-2 md:hidden">
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onSelectLeft();
+              }}
+              aria-label="Select left image"
+              className="w-10 h-10 rounded-full border-2 border-black bg-yellow_green text-black font-bold flex items-center justify-center"
+            >
+              1
+            </button>
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onSelectRight();
+              }}
+              aria-label="Select right image"
+              className="w-10 h-10 rounded-full border-2 border-black bg-yellow_green text-black font-bold flex items-center justify-center"
+            >
+              2
+            </button>
+          </div>
+          <div style={{ aspectRatio: aspectRatio }}>
+            <ReactCompareImage
+              leftImage={leftSrc}
+              rightImage={rightSrc}
+              leftImageLabel="Left Version"
+              rightImageLabel="Right Version"
+              sliderLineWidth={4}
+              sliderLineColor="#d11149"
+              handleSize={48}
+              aspectRatio={aspectRatio}
+              onSliderPositionChange={(pos) => {}}
+              alt="Image comparison slider"
+            />
+          </div>
         </div>
       ) : (
         <div className="flex flex-col md:flex-row gap-6">
@@ -277,7 +309,10 @@ export default function ComparisonView({
             min={50}
             max={200}
             step={5}
-            onChange={(value) => setZoom(value)}
+            onChange={(value) => {
+              setZoom(value);
+              trackEvent('zoom_change', { value });
+            }}
             className="flex-1 h-3 md:h-4"
             trackStyle={{ backgroundColor: '#3b82f6' }}
             handleStyle={{

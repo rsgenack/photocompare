@@ -1,9 +1,9 @@
 'use client';
+import { trackEvent } from '@/utils/analytics';
 import { scrollToTop } from '@/utils/scroll-utils';
 import { ArrowRight } from 'lucide-react';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import ImageUploader from './image-uploader';
-import { useState } from 'react';
 import InvalidImagesModal from './invalid-images-modal.jsx';
 
 export default function UploadPage({
@@ -19,6 +19,7 @@ export default function UploadPage({
 
   const handleStartComparison = () => {
     scrollToTop();
+    trackEvent('start_comparison', { count: uploadedImages.length });
     startComparison();
   };
 
@@ -80,9 +81,15 @@ export default function UploadPage({
               if (bad.length > 0) {
                 setInvalidImages(bad);
                 setShowInvalidModal(true);
+                trackEvent('upload_invalid', { count: bad.length });
               }
-              const good = checked.filter((i) => !i.__invalid).map(({ __invalid, ...rest }) => rest);
-              if (good.length > 0) handleImagesUploaded(good);
+              const good = checked
+                .filter((i) => !i.__invalid)
+                .map(({ __invalid, ...rest }) => rest);
+              if (good.length > 0) {
+                trackEvent('upload_success', { count: good.length });
+                handleImagesUploaded(good);
+              }
             });
           }}
         />
@@ -139,12 +146,17 @@ export default function UploadPage({
           // Already skipped invalid on add; just close
           setShowInvalidModal(false);
           setInvalidImages([]);
+          trackEvent('invalid_modal_remove');
         }}
         onRedo={() => {
           // Clear all and let user upload again
+          trackEvent('invalid_modal_redo');
           window.location.reload();
         }}
-        onClose={() => setShowInvalidModal(false)}
+        onClose={() => {
+          setShowInvalidModal(false);
+          trackEvent('invalid_modal_close');
+        }}
       />
     </div>
   );

@@ -1,6 +1,7 @@
 'use client';
 
 import { useMobile } from '@/hooks/use-mobile';
+import { trackEvent } from '@/utils/analytics';
 import { debugLog, monitorFocus } from '@/utils/debug-utils';
 import {
   calculateConfidence,
@@ -174,10 +175,13 @@ export default function PhotoCompare() {
         );
 
         if (hasDifferentAspectRatios) {
+          // Warn, but allow proceeding. Keep aspect ratio from first image for slider layout
           setError(
-            'When comparing versions of the same photo, all images must have the same aspect ratio.',
+            'Warning: Some images have different aspect ratios. Results may be less accurate for version comparisons.',
           );
-          return false;
+          setShowDimensionWarning(true);
+          setImageAspectRatio(firstDimension.aspectRatio);
+          return true;
         }
 
         // Store the aspect ratio in state for the comparison view
@@ -889,7 +893,10 @@ export default function PhotoCompare() {
                 className={`px-3 py-1 border-2 border-black font-bold ${
                   overlayMode === 'slider' ? 'bg-yellow_green' : 'bg-white'
                 }`}
-                onClick={() => setOverlayMode('slider')}
+                onClick={() => {
+                  setOverlayMode('slider');
+                  trackEvent('overlay_mode', { mode: 'slider' });
+                }}
               >
                 SLIDER
               </button>
@@ -897,7 +904,10 @@ export default function PhotoCompare() {
                 className={`px-3 py-1 border-2 border-black font-bold ${
                   overlayMode === 'side-by-side' ? 'bg-yellow_green' : 'bg-white'
                 }`}
-                onClick={() => setOverlayMode('side-by-side')}
+                onClick={() => {
+                  setOverlayMode('side-by-side');
+                  trackEvent('overlay_mode', { mode: 'side-by-side' });
+                }}
               >
                 SIDE-BY-SIDE
               </button>
@@ -911,13 +921,20 @@ export default function PhotoCompare() {
             leftImage={currentPair[0]}
             rightImage={currentPair[1]}
             onSelectLeft={() => {
-              if (!isDone) selectWinner(currentPair[0].id);
+              if (!isDone) {
+                trackEvent('select_photo', { side: 'left' });
+                selectWinner(currentPair[0].id);
+              }
             }}
             onSelectRight={() => {
-              if (!isDone) selectWinner(currentPair[1].id);
+              if (!isDone) {
+                trackEvent('select_photo', { side: 'right' });
+                selectWinner(currentPair[1].id);
+              }
             }}
             onRemoveLeft={(id) => handleRemoveImage(id)}
             onRemoveRight={(id) => handleRemoveImage(id)}
+            disabled={isMobile}
           />
 
           <ComparisonView
@@ -940,6 +957,7 @@ export default function PhotoCompare() {
           <div className="mt-6 flex justify-center">
             <button
               onClick={() => {
+                trackEvent('skip_to_results');
                 calculateFinalRankings();
                 changeStep('results');
               }}
