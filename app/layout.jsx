@@ -65,7 +65,20 @@ export default function RootLayout({ children }) {
         <main>{children}</main>
         <footer className="container mx-auto mt-12 text-center border-t border-black pt-4">
           <div className="mb-1">
-            <span className="font-display font-black text-sm text-black/60">VOTOGRAPHER</span>
+            <span
+              className="font-display font-black text-lg inline-block"
+              style={{
+                backgroundImage:
+                  'linear-gradient(to right, rgb(209, 17, 73), rgb(241, 113, 5), rgb(255, 186, 8), rgb(177, 207, 95), rgb(144, 224, 243), rgb(123, 137, 239))',
+                backgroundClip: 'text',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                color: 'rgb(209, 17, 73)',
+                lineHeight: '1.25rem',
+              }}
+            >
+              VOTOGRAPHER
+            </span>
           </div>
           <p className="font-medium text-black font-sans">
             © {new Date().getFullYear()} VOTOGRAPHER | REBECCA GENACK
