@@ -8,7 +8,12 @@ export const metadata = {
   description: 'Compare and rank your photos',
   generator: 'v0.dev',
   icons: {
-    icon: '/favicon.svg',
+    icon: [
+      { url: '/favicon.svg', type: 'image/svg+xml' },
+      { url: '/favicon-32x32.png', sizes: '32x32', type: 'image/png' },
+      { url: '/favicon-16x16.png', sizes: '16x16', type: 'image/png' },
+      { url: '/apple-touch-icon.png', sizes: '180x180', rel: 'apple-touch-icon' },
+    ],
   },
   openGraph: {
     title: 'VOTOGRAPHER',
@@ -46,6 +51,21 @@ export default function RootLayout({ children }) {
         />
       </head>
       <body className="min-h-screen">
+        {/* Force OG/Twitter link tags for scrapers that don't parse Next metadata */}
+        <link rel="canonical" href="https://votographer.com" />
+        <meta property="og:title" content="VOTOGRAPHER" />
+        <meta property="og:description" content="Find your best photos, easily and enjoyably" />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://votographer.com" />
+        <meta property="og:image" content="https://votographer.com/VOTOGRAPHER_OG/facebook1200x630.png" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content="VOTOGRAPHER" />
+        <meta name="twitter:description" content="Find your best photos, easily and enjoyably" />
+        <meta name="twitter:image" content="https://votographer.com/VOTOGRAPHER_OG/twittercropped2.png" />
+        <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+        <link rel="icon" href="/favicon-32x32.png" sizes="32x32" type="image/png" />
+        <link rel="icon" href="/favicon-16x16.png" sizes="16x16" type="image/png" />
+        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
         {/* Google Analytics */}
         <Script
           id="ga-load"
