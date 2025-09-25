@@ -739,27 +739,6 @@ export default function PhotoCompare() {
   if (step === 'type') {
     return (
       <>
-        {/* Mini Home Button - toned down, non-sticky */}
-        <button
-          onClick={() => changeStep('type')}
-          className="mt-4 ml-4 hover:opacity-80 transition-opacity duration-150 text-left"
-        >
-          <span
-            className="relative inline-block font-bold break-words"
-            style={{
-              fontSize: '1.25rem',
-              lineHeight: '1.3rem',
-              backgroundImage:
-                'linear-gradient(to right, rgb(209, 17, 73), rgb(241, 113, 5), rgb(255, 186, 8), rgb(177, 207, 95), rgb(144, 224, 243), rgb(123, 137, 239))',
-              backgroundClip: 'text',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              opacity: 0.85,
-            }}
-          >
-            VOTOGRAPHER
-          </span>
-        </button>
         <ErrorMessage />
         <ComparisonTypePage
           comparisonType={comparisonType}
@@ -772,6 +751,10 @@ export default function PhotoCompare() {
             }
           }}
         />
+        {/* Subtle logo at bottom center */}
+        <div className="flex justify-center mt-8 mb-4">
+          <span className="font-display font-black text-sm text-black/60">VOTOGRAPHER</span>
+        </div>
       </>
     );
   }
@@ -779,27 +762,6 @@ export default function PhotoCompare() {
   if (step === 'upload') {
     return (
       <>
-        {/* Mini Home Button - toned down, non-sticky */}
-        <button
-          onClick={() => changeStep('type')}
-          className="mt-4 ml-4 hover:opacity-80 transition-opacity duration-150 text-left"
-        >
-          <span
-            className="relative inline-block font-bold break-words"
-            style={{
-              fontSize: '1.25rem',
-              lineHeight: '1.3rem',
-              backgroundImage:
-                'linear-gradient(to right, rgb(209, 17, 73), rgb(241, 113, 5), rgb(255, 186, 8), rgb(177, 207, 95), rgb(144, 224, 243), rgb(123, 137, 239))',
-              backgroundClip: 'text',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              opacity: 0.85,
-            }}
-          >
-            VOTOGRAPHER
-          </span>
-        </button>
         <ErrorMessage />
         <UploadPage
           uploadedImages={uploadedImages}
@@ -812,6 +774,10 @@ export default function PhotoCompare() {
           onClose={() => setShowDimensionWarning(false)}
           onProceed={handleProceedWithDifferentType}
         />
+        {/* Subtle logo at bottom center */}
+        <div className="flex justify-center mt-8 mb-4">
+          <span className="font-display font-black text-sm text-black/60">VOTOGRAPHER</span>
+        </div>
       </>
     );
   }

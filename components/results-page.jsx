@@ -267,27 +267,10 @@ export default function ResultsPage({
 
   return (
     <div className="w-full max-w-full overflow-visible">
-      {/* Mini Home Button - Outside main content area */}
-      <button
-        onClick={() => changeStep('type')}
-        className="fixed top-4 left-4 z-50 hover:scale-105 transition-transform duration-200 bg-white/90 backdrop-blur-sm px-3 py-2 rounded-lg border border-black shadow-lg"
-      >
-        <span
-          className="relative inline-block font-bold break-words"
-          style={{
-            fontSize: '2rem',
-            lineHeight: '2.01rem',
-            backgroundImage:
-              'linear-gradient(to right, rgb(209, 17, 73), rgb(241, 113, 5), rgb(255, 186, 8), rgb(177, 207, 95), rgb(144, 224, 243), rgb(123, 137, 239))',
-            backgroundClip: 'text',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-            color: 'rgb(209, 17, 73)', // Fallback color
-          }}
-        >
-          VOTOGRAPHER
-        </span>
-      </button>
+      {/* Subtle logo at bottom center */}
+      <div className="fixed bottom-3 left-0 right-0 z-40 flex justify-center pointer-events-none">
+        <span className="font-display font-black text-sm text-black/60">VOTOGRAPHER</span>
+      </div>
 
       <div className="w-full max-w-full py-8">
         {/* Header Section */}
