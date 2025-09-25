@@ -267,10 +267,7 @@ export default function ResultsPage({
 
   return (
     <div className="w-full max-w-full overflow-visible">
-      {/* Subtle logo at bottom center */}
-      <div className="fixed bottom-3 left-0 right-0 z-40 flex justify-center pointer-events-none">
-        <span className="font-display font-black text-sm text-black/60">VOTOGRAPHER</span>
-      </div>
+      {/* Removed page-level bottom logo; now in global footer */}
 
       <div className="w-full max-w-full py-8">
         {/* Header Section */}

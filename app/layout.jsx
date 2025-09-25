@@ -64,6 +64,9 @@ export default function RootLayout({ children }) {
         </Suspense>
         <main>{children}</main>
         <footer className="container mx-auto mt-12 text-center border-t border-black pt-4">
+          <div className="mb-1">
+            <span className="font-display font-black text-sm text-black/60">VOTOGRAPHER</span>
+          </div>
           <p className="font-medium text-black font-sans">
             © {new Date().getFullYear()} VOTOGRAPHER | REBECCA GENACK
           </p>

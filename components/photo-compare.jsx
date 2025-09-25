@@ -751,10 +751,7 @@ export default function PhotoCompare() {
             }
           }}
         />
-        {/* Subtle logo at bottom center */}
-        <div className="flex justify-center mt-8 mb-4">
-          <span className="font-display font-black text-sm text-black/60">VOTOGRAPHER</span>
-        </div>
+        {/* Bottom logo moved to global footer */}
       </>
     );
   }
@@ -774,10 +771,7 @@ export default function PhotoCompare() {
           onClose={() => setShowDimensionWarning(false)}
           onProceed={handleProceedWithDifferentType}
         />
-        {/* Subtle logo at bottom center */}
-        <div className="flex justify-center mt-8 mb-4">
-          <span className="font-display font-black text-sm text-black/60">VOTOGRAPHER</span>
-        </div>
+        {/* Bottom logo moved to global footer */}
       </>
     );
   }
