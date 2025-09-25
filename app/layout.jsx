@@ -1,4 +1,5 @@
 import Script from 'next/script';
+import { Suspense } from 'react';
 import './globals.css';
 
 export const metadata = {
@@ -58,7 +59,9 @@ export default function RootLayout({ children }) {
             gtag('config', 'G-1006GRWNV2');
           `}
         </Script>
-        <GATracker />
+        <Suspense fallback={null}>
+          <GATracker />
+        </Suspense>
         <main>{children}</main>
         <footer className="container mx-auto mt-12 text-center border-t border-black pt-4">
           <p className="font-medium text-black font-sans">
