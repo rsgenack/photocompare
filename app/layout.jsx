@@ -29,7 +29,7 @@ export const metadata = {
     card: 'summary_large_image',
     title: 'VOTOGRAPHER',
     description: 'Find your best photos, easily and enjoyably',
-    images: ['/VOTOGRAPHER_OG/facebook1200x630.png'],
+    images: ['/VOTOGRAPHER_OG/twittercropped2.png'],
   },
 };
 
