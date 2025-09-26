@@ -1,28 +1,27 @@
 'use server';
 
-import { NextResponse } from 'next/server';
+import { NextResponse, type NextRequest } from 'next/server';
 
-export function middleware(req: Request) {
+export function middleware(request: NextRequest) {
   // Enforce HTTPS and canonical host in production only
-  // Works on Vercel and most proxies via x-forwarded-proto
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  // @ts-ignore
-  const url = req.nextUrl.clone();
   const isProd = process.env.NODE_ENV === 'production';
   if (!isProd) return NextResponse.next();
 
-  const proto = (req.headers.get('x-forwarded-proto') || '').toLowerCase();
-  const hostHeader = req.headers.get('host') || url.host;
+  const url = request.nextUrl.clone();
+  const host = request.headers.get('host') || url.host || '';
+  const protoHeader = (request.headers.get('x-forwarded-proto') || '').toLowerCase();
+  const proto = protoHeader || (url.protocol?.replace(':', '') || '');
 
-  // Redirect http -> https
+  // Redirect http -> https (only if clearly non-https)
   if (proto && proto !== 'https') {
     url.protocol = 'https:';
     return NextResponse.redirect(url, 301);
   }
 
-  // Canonicalize www to apex domain
-  if (hostHeader && hostHeader.startsWith('www.')) {
-    url.host = hostHeader.replace(/^www\./, 'votographer.com');
+  // Canonicalize www only for our domain to avoid breaking previews
+  const isOurDomain = /(^|\.)votographer\.com$/i.test(host);
+  if (isOurDomain && host.startsWith('www.')) {
+    url.host = host.replace(/^www\./i, 'votographer.com');
     return NextResponse.redirect(url, 301);
   }
 
