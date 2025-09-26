@@ -278,7 +278,7 @@ export default function ResultsPage({
 
           <div className="border-t-2 border-b-2 border-black py-4 mb-12 flex flex-col sm:flex-row justify-between items-center gap-4">
             <div className="text-lg font-bold">TOTAL PHOTOS: {rankedImages.length}</div>
-            <div className="text-lg font-bold">WINNER: PHOTO #{rankedImages[0]?.rank || 1}</div>
+            {/* Removed static winner label per user request */}
           </div>
         </div>
 

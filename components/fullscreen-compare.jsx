@@ -100,8 +100,8 @@ export default function FullScreenCompare({
 
       <div ref={containerRef} className={`${active ? 'fixed inset-0 z-[1000] bg-white' : ''}`}>
         {active && !disabled && (
-          <div className="sticky top-0 left-0 right-0 z-[1001] bg-white border-b-2 border-black">
-            <div className="px-4 py-3 flex flex-col md:flex-row gap-3 md:gap-6 items-center justify-between">
+          <div className="fixed top-0 left-0 right-0 z-[1001] bg-white border-b-2 border-black">
+            <div className="px-4 py-3 flex flex-col md:flex-row gap-3 md:gap-6 items-center justify-between pointer-events-auto">
               <div className="text-base md:text-lg font-bold">
                 {formatNumber(remaining)} COMPARISONS REMAINING
               </div>
@@ -121,7 +121,7 @@ export default function FullScreenCompare({
         {active && !disabled && (
           <div
             ref={contentRef}
-            className="w-full h-[calc(100%-64px)] flex flex-col md:flex-row gap-4 items-center justify-center p-6 pb-6 overflow-auto box-border"
+            className="w-full h-full pt-[64px] flex flex-col md:flex-row gap-4 items-center justify-center p-6 pb-6 overflow-auto box-border"
           >
             <div
               className="relative flex-1 max-h-full w-full border-2 border-black bg-white cursor-pointer flex items-center justify-center mx-auto"

@@ -1,5 +1,6 @@
 'use client';
 
+import { useMobile } from '@/hooks/use-mobile';
 import { trackEvent } from '@/utils/analytics';
 import { ArrowLeft, ArrowRight, Maximize, Minimize, X, ZoomIn, ZoomOut } from 'lucide-react';
 import Slider from 'rc-slider';
@@ -26,6 +27,8 @@ export default function ComparisonView({
   const rightImageRef = useRef(null);
   // Add state for container style
   const [containerStyle, setContainerStyle] = useState({});
+  const isMobile = useMobile();
+  const [isLandscape, setIsLandscape] = useState(false);
 
   // Ensure we have valid image objects
   const leftSrc = leftImage?.url || '/placeholder.svg?height=500&width=500';
@@ -86,6 +89,21 @@ export default function ComparisonView({
     }
   }, [aspectRatio]);
 
+  // Detect orientation for mobile devices to enable side-by-side in landscape
+  useEffect(() => {
+    const mql = typeof window !== 'undefined' ? window.matchMedia('(orientation: landscape)') : null;
+    const update = () => setIsLandscape(Boolean(mql?.matches));
+    update();
+    mql?.addEventListener?.('change', update);
+    window?.addEventListener?.('orientationchange', update);
+    window?.addEventListener?.('resize', update);
+    return () => {
+      mql?.removeEventListener?.('change', update);
+      window?.removeEventListener?.('orientationchange', update);
+      window?.removeEventListener?.('resize', update);
+    };
+  }, []);
+
   // Fix the click handlers to ensure they properly trigger selection
 
   // Handle image click events - simplified to directly call the handlers
@@ -140,9 +158,9 @@ export default function ComparisonView({
                 onSelectLeft();
               }}
               aria-label="Select left image"
-              className="w-10 h-10 rounded-full border-2 border-black bg-yellow_green text-black font-bold flex items-center justify-center"
+              className="px-3 py-2 rounded-full border-2 border-black bg-selective_yellow text-black font-bold flex items-center justify-center"
             >
-              1
+              Photo 1
             </button>
             <button
               onClick={(e) => {
@@ -151,9 +169,9 @@ export default function ComparisonView({
                 onSelectRight();
               }}
               aria-label="Select right image"
-              className="w-10 h-10 rounded-full border-2 border-black bg-yellow_green text-black font-bold flex items-center justify-center"
+              className="px-3 py-2 rounded-full border-2 border-black bg-tropical_indigo text-white font-bold flex items-center justify-center"
             >
-              2
+              Photo 2
             </button>
           </div>
           <div style={{ aspectRatio: aspectRatio }}>
@@ -172,13 +190,15 @@ export default function ComparisonView({
           </div>
         </div>
       ) : (
-        <div className="flex flex-col md:flex-row gap-6">
+        <div className={`flex ${isMobile && isLandscape ? 'flex-row' : 'flex-col md:flex-row'} gap-6`}>
           <div className="flex-1 flex flex-col">
             <div
               className="overflow-hidden select-none relative flex-grow border-2 border-black cursor-pointer w-full"
               style={{
                 ...(aspectRatio
                   ? { aspectRatio: aspectRatio }
+                  : isMobile && isLandscape
+                  ? { height: '40vh', minHeight: '40vh' }
                   : { height: '300px', minHeight: '300px' }),
                 backgroundColor: 'white',
                 WebkitTapHighlightColor: 'transparent',
@@ -229,6 +249,8 @@ export default function ComparisonView({
               style={{
                 ...(aspectRatio
                   ? { aspectRatio: aspectRatio }
+                  : isMobile && isLandscape
+                  ? { height: '40vh', minHeight: '40vh' }
                   : { height: '300px', minHeight: '300px' }),
                 backgroundColor: 'white',
                 WebkitTapHighlightColor: 'transparent',
@@ -275,8 +297,8 @@ export default function ComparisonView({
         </div>
       )}
 
-      {/* Keyboard shortcuts info */}
-      <div className="bg-gray-100 p-4 text-center border-2 border-black">
+      {/* Keyboard shortcuts info (hidden on mobile) */}
+      <div className="bg-gray-100 p-4 text-center border-2 border-black hidden md:block">
         <p className="text-lg font-bold text-black mb-2">KEYBOARD SHORTCUTS</p>
         <div className="flex items-center justify-center gap-8">
           <div className="flex items-center">

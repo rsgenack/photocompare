@@ -62,3 +62,69 @@ export function getFullOgImageUrl(platform = 'facebook') {
   const imagePath = getOgImagePath(platform);
   return `${baseUrl}${imagePath}`;
 }
+
+/**
+ * Return relative-path OG image candidates in preferred order (PNG, JPG, SVG)
+ * including MIME type and recommended dimensions for each platform.
+ */
+export function getOgImageCandidates(platform = 'facebook') {
+  let baseName = '';
+  let width = 1200;
+  let height = 630;
+
+  switch (platform) {
+    case 'facebook':
+      baseName = '/og_svg_images/facebook1200x630';
+      width = 1200;
+      height = 630;
+      break;
+    case 'twitter':
+      // Using 1200 x 630 assets for summary_large_image
+      baseName = '/og_svg_images/twittercropped2';
+      width = 1200;
+      height = 630;
+      break;
+    case 'imessage':
+      // Prefer 1x1 PNG/JPG, fallback to existing SVG v2
+      baseName = '/og_svg_images/linkedin_and_twitter_1x1';
+      width = 1200;
+      height = 1200;
+      break;
+    case 'linkedin':
+      baseName = '/og_svg_images/LinkedIn1200×627';
+      width = 1200;
+      height = 627;
+      break;
+    default:
+      baseName = '/og_svg_images/facebook1200x630';
+      width = 1200;
+      height = 630;
+  }
+
+  const candidates = [
+    { path: `${baseName}.png`, type: 'image/png', width, height },
+    { path: `${baseName}.jpg`, type: 'image/jpeg', width, height },
+  ];
+
+  // For imessage, the SVG asset uses a different basename with _v2 suffix
+  if (platform === 'imessage') {
+    candidates.push({
+      path: '/og_svg_images/linkedin_and_twitter_1x1_v2.svg',
+      type: 'image/svg+xml',
+      width,
+      height,
+    });
+  } else {
+    candidates.push({ path: `${baseName}.svg`, type: 'image/svg+xml', width, height });
+  }
+
+  return candidates;
+}
+
+/**
+ * Return absolute URL OG image candidates in preferred order.
+ */
+export function getFullOgImageCandidates(platform = 'facebook') {
+  const baseUrl = getBaseUrl();
+  return getOgImageCandidates(platform).map((c) => ({ ...c, url: `${baseUrl}${c.path}` }));
+}

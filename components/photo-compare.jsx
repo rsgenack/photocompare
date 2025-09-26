@@ -4,13 +4,13 @@ import { useMobile } from '@/hooks/use-mobile';
 import { trackEvent } from '@/utils/analytics';
 import { debugLog, monitorFocus } from '@/utils/debug-utils';
 import {
-  calculateConfidence,
-  DEFAULT_RATING,
-  DEFAULT_UNCERTAINTY,
-  findMostInformativePair,
-  hasEnoughConfidenceEnhanced,
-  updateRatingsAdaptive,
-  updateUncertainties,
+    calculateConfidence,
+    DEFAULT_RATING,
+    DEFAULT_UNCERTAINTY,
+    findMostInformativePair,
+    hasEnoughConfidenceEnhanced,
+    updateRatingsAdaptive,
+    updateUncertainties,
 } from '@/utils/elo-rating';
 import { formatNumber } from '@/utils/format';
 import { scrollToTop } from '@/utils/scroll-utils';
@@ -779,27 +779,7 @@ export default function PhotoCompare() {
   if (step === 'compare' && currentPair) {
     return (
       <div className="max-w-4xl mx-auto relative">
-        {/* Mini Home Button */}
-        <button
-          onClick={() => changeStep('type')}
-          className="absolute top-4 left-4 z-50 hover:scale-105 transition-transform duration-200 bg-white/80 backdrop-blur-sm px-3 py-2 rounded-lg border border-black"
-        >
-          <span
-            className="relative inline-block font-bold break-words"
-            style={{
-              fontSize: '2rem',
-              lineHeight: '2.01rem',
-              backgroundImage:
-                'linear-gradient(to right, rgb(209, 17, 73), rgb(241, 113, 5), rgb(255, 186, 8), rgb(177, 207, 95), rgb(144, 224, 243), rgb(123, 137, 239))',
-              backgroundClip: 'text',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              color: 'rgb(209, 17, 73)', // Fallback color
-            }}
-          >
-            VOTOGRAPHER
-          </span>
-        </button>
+        {/* Removed floating logo button per user request */}
 
         <ErrorMessage />
         <div className="border-2 border-black p-4 md:p-8 mb-6 md:mb-12 bg-white">

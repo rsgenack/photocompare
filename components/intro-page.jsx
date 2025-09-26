@@ -64,17 +64,17 @@ export default function IntroPage({ onGetStarted = null }) {
           className="relative mb-8 w-full max-w-full overflow-visible"
         >
           <h1
-            className="text-[clamp(2.5rem,8vw,8rem)] font-black tracking-tight text-center font-display mb-4 px-2 w-full max-w-full break-words overflow-visible"
+            className="text-[clamp(2rem,12vw,8rem)] font-black tracking-tight text-center font-display mb-4 px-2 w-full max-w-full overflow-visible"
             style={{
               lineHeight: 1.05,
-              wordBreak: 'break-word',
+              // Avoid wrapping on small screens; allow normal wrapping on md+
               WebkitTextWrap: 'balance',
               textWrap: 'balance',
               hyphens: 'auto',
             }}
           >
             <span
-              className="relative inline-block bg-clip-text text-transparent w-full max-w-full break-words"
+              className="relative inline-block bg-clip-text text-transparent w-full max-w-full whitespace-nowrap md:whitespace-normal"
               style={{
                 backgroundImage:
                   'linear-gradient(to right, #d11149, #f17105, #ffba08, #b1cf5f, #90e0f3, #7b89ef)',
