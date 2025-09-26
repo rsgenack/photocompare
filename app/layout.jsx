@@ -7,6 +7,7 @@ import './globals.css';
 const baseUrl = getBaseUrl();
 const facebookOgImage = getFullOgImageUrl('facebook');
 const twitterOgImage = getFullOgImageUrl('twitter');
+const imessageOgImage = getFullOgImageUrl('imessage');
 
 export const metadata = {
   metadataBase: new URL(baseUrl),
@@ -33,6 +34,12 @@ export const metadata = {
         width: 1200,
         height: 630,
         alt: 'VOTOGRAPHER Final Rankings',
+      },
+      {
+        url: imessageOgImage,
+        width: 1200,
+        height: 1200,
+        alt: 'VOTOGRAPHER Square Logo',
       },
     ],
     locale: 'en_US',
@@ -75,6 +82,11 @@ export default function RootLayout({ children }) {
           name="twitter:image"
           content={twitterOgImage}
         />
+        {/* iMessage-specific OG image for better compatibility */}
+        <meta property="og:image" content={imessageOgImage} />
+        <meta property="og:image:width" content="1200" />
+        <meta property="og:image:height" content="1200" />
+        <meta property="og:image:type" content="image/svg+xml" />
         <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
         <link rel="icon" href="/favicon.png" type="image/png" />
         <link rel="icon" href="/favicon-32x32.png" sizes="32x32" type="image/png" />

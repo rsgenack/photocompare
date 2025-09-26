@@ -50,6 +50,8 @@ export function getOgImagePath(platform = 'facebook') {
       return `${basePath}/LinkedIn1200×627.svg`;
     case 'instagram':
       return `${basePath}/instagram.svg`;
+    case 'imessage':
+      return `${basePath}/linkedin_and_twitter_1x1_v2.svg`;
     default:
       return `${basePath}/facebook1200x630.svg`;
   }
