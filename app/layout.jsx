@@ -1,14 +1,21 @@
+import { getBaseUrl, getFullOgImageUrl } from '@/utils/environment';
 import Script from 'next/script';
 import { Suspense } from 'react';
 import './globals.css';
 
+// Get environment-specific URLs
+const baseUrl = getBaseUrl();
+const facebookOgImage = getFullOgImageUrl('facebook');
+const twitterOgImage = getFullOgImageUrl('twitter');
+
 export const metadata = {
-  metadataBase: new URL('https://votographer.com'),
+  metadataBase: new URL(baseUrl),
   title: 'VOTOGRAPHER',
   description: 'Compare and rank your photos',
   generator: 'v0.dev',
   icons: {
     icon: [
+      { url: '/favicon.svg', type: 'image/svg+xml' },
       { url: '/favicon.png', type: 'image/png' },
       { url: '/favicon-32x32.png', sizes: '32x32', type: 'image/png' },
       { url: '/favicon-16x16.png', sizes: '16x16', type: 'image/png' },
@@ -18,11 +25,11 @@ export const metadata = {
   openGraph: {
     title: 'VOTOGRAPHER',
     description: 'Find your best photos, easily and enjoyably',
-    url: 'https://votographer.com',
+    url: baseUrl,
     siteName: 'VOTOGRAPHER',
     images: [
       {
-        url: '/VOTOGRAPHER_OG/facebook1200x630.png',
+        url: facebookOgImage,
         width: 1200,
         height: 630,
         alt: 'VOTOGRAPHER Final Rankings',
@@ -35,7 +42,7 @@ export const metadata = {
     card: 'summary_large_image',
     title: 'VOTOGRAPHER',
     description: 'Find your best photos, easily and enjoyably',
-    images: ['/VOTOGRAPHER_OG/twittercropped2.png'],
+    images: [twitterOgImage],
   },
 };
 
@@ -52,22 +59,23 @@ export default function RootLayout({ children }) {
       </head>
       <body className="min-h-screen">
         {/* Force OG/Twitter link tags for scrapers that don't parse Next metadata */}
-        <link rel="canonical" href="https://votographer.com" />
+        <link rel="canonical" href={baseUrl} />
         <meta property="og:title" content="VOTOGRAPHER" />
         <meta property="og:description" content="Find your best photos, easily and enjoyably" />
         <meta property="og:type" content="website" />
-        <meta property="og:url" content="https://votographer.com" />
+        <meta property="og:url" content={baseUrl} />
         <meta
           property="og:image"
-          content="https://votographer.com/VOTOGRAPHER_OG/facebook1200x630.png"
+          content={facebookOgImage}
         />
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content="VOTOGRAPHER" />
         <meta name="twitter:description" content="Find your best photos, easily and enjoyably" />
         <meta
           name="twitter:image"
-          content="https://votographer.com/VOTOGRAPHER_OG/twittercropped2.png"
+          content={twitterOgImage}
         />
+        <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
         <link rel="icon" href="/favicon.png" type="image/png" />
         <link rel="icon" href="/favicon-32x32.png" sizes="32x32" type="image/png" />
         <link rel="icon" href="/favicon-16x16.png" sizes="16x16" type="image/png" />
@@ -118,3 +126,4 @@ export default function RootLayout({ children }) {
 
 import GATracker from '@/components/ga-tracker';
 import './globals.css';
+
