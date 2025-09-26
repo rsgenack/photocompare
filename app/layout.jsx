@@ -1,6 +1,6 @@
 import { getBaseUrl, getFullOgImageCandidates } from '@/utils/environment';
 import Script from 'next/script';
-import { Suspense } from 'react';
+import { Suspense, Fragment } from 'react';
 import './globals.css';
 
 // Get environment-specific URLs and OG image candidates
@@ -73,13 +73,13 @@ export default function RootLayout({ children }) {
         <meta property="og:type" content="website" />
         <meta property="og:url" content={baseUrl} />
         {facebookCandidates.map((c, idx) => (
-          <>
-            <meta key={`og-image-fb-${idx}`} property="og:image" content={c.url} />
-            <meta key={`og-image-fb-w-${idx}`} property="og:image:width" content={String(c.width)} />
-            <meta key={`og-image-fb-h-${idx}`} property="og:image:height" content={String(c.height)} />
-            <meta key={`og-image-fb-type-${idx}`} property="og:image:type" content={c.type} />
-            <meta key={`og-image-fb-sec-${idx}`} property="og:image:secure_url" content={c.url} />
-          </>
+          <Fragment key={`og-image-fb-group-${idx}`}>
+            <meta property="og:image" content={c.url} />
+            <meta property="og:image:width" content={String(c.width)} />
+            <meta property="og:image:height" content={String(c.height)} />
+            <meta property="og:image:type" content={c.type} />
+            <meta property="og:image:secure_url" content={c.url} />
+          </Fragment>
         ))}
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content="VOTOGRAPHER" />
@@ -87,13 +87,13 @@ export default function RootLayout({ children }) {
         <meta name="twitter:image" content={twitterCandidates[0]?.url || facebookCandidates[0]?.url} />
         {/* Square image for iMessage/SMS (additional og:image group) */}
         {imessageCandidates.map((c, idx) => (
-          <>
-            <meta key={`og-image-im-${idx}`} property="og:image" content={c.url} />
-            <meta key={`og-image-im-w-${idx}`} property="og:image:width" content={String(c.width)} />
-            <meta key={`og-image-im-h-${idx}`} property="og:image:height" content={String(c.height)} />
-            <meta key={`og-image-im-type-${idx}`} property="og:image:type" content={c.type} />
-            <meta key={`og-image-im-sec-${idx}`} property="og:image:secure_url" content={c.url} />
-          </>
+          <Fragment key={`og-image-im-group-${idx}`}>
+            <meta property="og:image" content={c.url} />
+            <meta property="og:image:width" content={String(c.width)} />
+            <meta property="og:image:height" content={String(c.height)} />
+            <meta property="og:image:type" content={c.type} />
+            <meta property="og:image:secure_url" content={c.url} />
+          </Fragment>
         ))}
         {/* OG Logo */}
         <meta property="og:logo" content={`${baseUrl}/favicon.svg`} />
