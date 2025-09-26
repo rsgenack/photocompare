@@ -1,7 +1,7 @@
 'use client';
 
 import { useMobile } from '@/hooks/use-mobile';
-import { trackEvent, setAnalyticsContext, Events } from '@/utils/analytics';
+import { Events, setAnalyticsContext, trackEvent } from '@/utils/analytics';
 import { debugLog, monitorFocus } from '@/utils/debug-utils';
 import {
     calculateConfidence,
