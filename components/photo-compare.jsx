@@ -1,7 +1,7 @@
 'use client';
 
 import { useMobile } from '@/hooks/use-mobile';
-import { Events, setAnalyticsContext, trackEvent } from '@/utils/analytics';
+import { trackEvent } from '@/utils/analytics';
 import { debugLog, monitorFocus } from '@/utils/debug-utils';
 import {
     calculateConfidence,
@@ -80,9 +80,6 @@ export default function PhotoCompare() {
       const slug = newStep === 'intro' ? 'start' : newStep;
       const url = `/${slug}`;
       window.history.pushState({ step: newStep }, '', url);
-    } catch {}
-    try {
-      setAnalyticsContext({ step: newStep, comparisonType });
     } catch {}
   }, []);
 
@@ -382,7 +379,7 @@ export default function PhotoCompare() {
           }));
 
         if (uniqueNewImages.length < newImages.length) {
-          setError(`${newImages.length - newImages.length} duplicate image(s) were skipped`);
+          setError(`${newImages.length - uniqueNewImages.length} duplicate image(s) were skipped`);
         } else {
           setError(null);
         }
@@ -405,10 +402,6 @@ export default function PhotoCompare() {
       changeStep('compare');
       setCompletedComparisons({});
       setError(null);
-      try {
-        setAnalyticsContext({ imageCount: uploadedImages.length });
-        Events.startComparison(uploadedImages.length);
-      } catch {}
     } else if (comparisonType === 'versions') {
       // Don't proceed if dimensions check failed for versions
       // The error message is already set in checkImageDimensions
@@ -842,7 +835,7 @@ export default function PhotoCompare() {
                 }`}
                 onClick={() => {
                   setOverlayMode('slider');
-                  Events.overlayMode('slider');
+                  trackEvent('overlay_mode', { mode: 'slider' });
                 }}
               >
                 SLIDER
@@ -853,7 +846,7 @@ export default function PhotoCompare() {
                 }`}
                 onClick={() => {
                   setOverlayMode('side-by-side');
-                  Events.overlayMode('side-by-side');
+                  trackEvent('overlay_mode', { mode: 'side-by-side' });
                 }}
               >
                 SIDE-BY-SIDE
@@ -869,13 +862,13 @@ export default function PhotoCompare() {
             rightImage={currentPair[1]}
             onSelectLeft={() => {
               if (!isDone) {
-                Events.selectPhoto('left');
+                trackEvent('select_photo', { side: 'left' });
                 selectWinner(currentPair[0].id);
               }
             }}
             onSelectRight={() => {
               if (!isDone) {
-                Events.selectPhoto('right');
+                trackEvent('select_photo', { side: 'right' });
                 selectWinner(currentPair[1].id);
               }
             }}

@@ -1,5 +1,5 @@
 'use client';
-import { Events, setAnalyticsContext } from '@/utils/analytics';
+import { trackEvent } from '@/utils/analytics';
 import { scrollToTop } from '@/utils/scroll-utils';
 import { ArrowRight } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
@@ -19,10 +19,7 @@ export default function UploadPage({
 
   const handleStartComparison = () => {
     scrollToTop();
-    try {
-      setAnalyticsContext({ imageCount: uploadedImages.length });
-      Events.startComparison(uploadedImages.length);
-    } catch {}
+    trackEvent('start_comparison', { count: uploadedImages.length });
     startComparison();
   };
 
