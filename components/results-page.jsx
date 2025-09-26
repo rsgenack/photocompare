@@ -1,7 +1,7 @@
 'use client';
 
 import { useMobile } from '@/hooks/use-mobile';
-import { trackEvent } from '@/utils/analytics';
+import { Events } from '@/utils/analytics';
 import { scrollToTop } from '@/utils/scroll-utils';
 import { ArrowRight, FileJson, FileSpreadsheet, Trophy } from 'lucide-react';
 import { useEffect, useState } from 'react';
@@ -302,7 +302,7 @@ export default function ResultsPage({
             <div className="flex flex-col md:flex-row gap-6">
               <button
                 onClick={() => {
-                  trackEvent('download_results', { format: 'csv' });
+                  Events.downloadResults('csv');
                   downloadResults('csv');
                 }}
                 className="flex-1 flex items-center justify-center py-4 px-6 bg-white text-black font-bold rounded-full border-2 border-black hover:bg-gray-100 transition-all duration-200"
@@ -313,7 +313,7 @@ export default function ResultsPage({
 
               <button
                 onClick={() => {
-                  trackEvent('download_results', { format: 'json' });
+                  Events.downloadResults('json');
                   downloadResults('json');
                 }}
                 className="flex-1 flex items-center justify-center py-4 px-6 bg-yellow_green text-black font-bold rounded-full hover:shadow-lg transition-all duration-200"

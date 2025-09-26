@@ -1,6 +1,6 @@
 'use client';
 
-import { trackEvent } from '@/utils/analytics';
+import { Events } from '@/utils/analytics';
 import { useEffect, useRef, useState } from 'react';
 
 export default function FullScreenResults({ children, disabled = false }) {
@@ -14,7 +14,7 @@ export default function FullScreenResults({ children, disabled = false }) {
       if (document.fullscreenElement) return setActive(true);
       await ref.current.requestFullscreen();
       setActive(true);
-      trackEvent('fullscreen_results_enter');
+      Events.fullscreenEnter('results');
     } catch {}
   };
 
@@ -23,7 +23,7 @@ export default function FullScreenResults({ children, disabled = false }) {
       if (document.fullscreenElement) await document.exitFullscreen();
     } catch {}
     setActive(false);
-    trackEvent('fullscreen_results_exit');
+    Events.fullscreenExit('results');
   };
 
   useEffect(() => {

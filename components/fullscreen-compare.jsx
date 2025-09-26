@@ -1,6 +1,6 @@
 'use client';
 
-import { trackEvent } from '@/utils/analytics';
+import { Events } from '@/utils/analytics';
 import { formatNumber } from '@/utils/format';
 import { useEffect, useRef, useState } from 'react';
 
@@ -29,7 +29,7 @@ export default function FullScreenCompare({
       if (document.fullscreenElement) return setActive(true);
       await containerRef.current.requestFullscreen();
       setActive(true);
-      trackEvent('fullscreen_compare_enter');
+      Events.fullscreenEnter('compare');
     } catch {}
   };
 
@@ -38,7 +38,7 @@ export default function FullScreenCompare({
       if (document.fullscreenElement) await document.exitFullscreen();
     } catch {}
     setActive(false);
-    trackEvent('fullscreen_compare_exit');
+    Events.fullscreenExit('compare');
   };
 
   useEffect(() => {

@@ -1,7 +1,7 @@
 'use client';
 
 import { useMobile } from '@/hooks/use-mobile';
-import { trackEvent } from '@/utils/analytics';
+import { Events, trackEvent } from '@/utils/analytics';
 import { ArrowLeft, ArrowRight, Maximize, Minimize, X, ZoomIn, ZoomOut } from 'lucide-react';
 import Slider from 'rc-slider';
 import 'rc-slider/assets/index.css';
@@ -333,7 +333,7 @@ export default function ComparisonView({
             step={5}
             onChange={(value) => {
               setZoom(value);
-              trackEvent('zoom_change', { value });
+              Events.zoomChange(value);
             }}
             className="flex-1 h-3 md:h-4"
             trackStyle={{ backgroundColor: '#3b82f6' }}
