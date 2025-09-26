@@ -1,13 +1,13 @@
-import { getBaseUrl, getFullOgImageUrl } from '@/utils/environment';
+import { getBaseUrl, getFullOgImageCandidates } from '@/utils/environment';
 import Script from 'next/script';
 import { Suspense } from 'react';
 import './globals.css';
 
-// Get environment-specific URLs
+// Get environment-specific URLs and OG image candidates
 const baseUrl = getBaseUrl();
-const facebookOgImage = getFullOgImageUrl('facebook');
-const twitterOgImage = getFullOgImageUrl('twitter');
-const imessageOgImage = getFullOgImageUrl('imessage');
+const facebookCandidates = getFullOgImageCandidates('facebook');
+const twitterCandidates = getFullOgImageCandidates('twitter');
+const imessageCandidates = getFullOgImageCandidates('imessage');
 
 export const metadata = {
   metadataBase: new URL(baseUrl),
@@ -29,18 +29,19 @@ export const metadata = {
     url: baseUrl,
     siteName: 'VOTOGRAPHER',
     images: [
-      {
-        url: facebookOgImage,
-        width: 1200,
-        height: 630,
-        alt: 'VOTOGRAPHER Final Rankings',
-      },
-      {
-        url: imessageOgImage,
-        width: 1200,
-        height: 1200,
-        alt: 'VOTOGRAPHER Square Logo',
-      },
+      // Prefer PNG/JPG; include SVG as last fallback
+      ...facebookCandidates.map((c) => ({
+        url: c.url,
+        width: c.width,
+        height: c.height,
+        alt: 'VOTOGRAPHER Open Graph Image',
+      })),
+      ...imessageCandidates.map((c) => ({
+        url: c.url,
+        width: c.width,
+        height: c.height,
+        alt: 'VOTOGRAPHER Square Image',
+      })),
     ],
     locale: 'en_US',
     type: 'website',
@@ -49,7 +50,7 @@ export const metadata = {
     card: 'summary_large_image',
     title: 'VOTOGRAPHER',
     description: 'Find your best photos, easily and enjoyably',
-    images: [twitterOgImage],
+    images: [twitterCandidates[0]?.url || facebookCandidates[0]?.url],
   },
 };
 
@@ -71,22 +72,29 @@ export default function RootLayout({ children }) {
         <meta property="og:description" content="Find your best photos, easily and enjoyably" />
         <meta property="og:type" content="website" />
         <meta property="og:url" content={baseUrl} />
-        <meta
-          property="og:image"
-          content={facebookOgImage}
-        />
+        {facebookCandidates.map((c, idx) => (
+          <>
+            <meta key={`og-image-fb-${idx}`} property="og:image" content={c.url} />
+            <meta key={`og-image-fb-w-${idx}`} property="og:image:width" content={String(c.width)} />
+            <meta key={`og-image-fb-h-${idx}`} property="og:image:height" content={String(c.height)} />
+            <meta key={`og-image-fb-type-${idx}`} property="og:image:type" content={c.type} />
+            <meta key={`og-image-fb-sec-${idx}`} property="og:image:secure_url" content={c.url} />
+          </>
+        ))}
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content="VOTOGRAPHER" />
         <meta name="twitter:description" content="Find your best photos, easily and enjoyably" />
-        <meta
-          name="twitter:image"
-          content={twitterOgImage}
-        />
-        {/* iMessage-specific OG image for better compatibility */}
-        <meta property="og:image" content={imessageOgImage} />
-        <meta property="og:image:width" content="1200" />
-        <meta property="og:image:height" content="1200" />
-        <meta property="og:image:type" content="image/svg+xml" />
+        <meta name="twitter:image" content={twitterCandidates[0]?.url || facebookCandidates[0]?.url} />
+        {/* Square image for iMessage/SMS (additional og:image group) */}
+        {imessageCandidates.map((c, idx) => (
+          <>
+            <meta key={`og-image-im-${idx}`} property="og:image" content={c.url} />
+            <meta key={`og-image-im-w-${idx}`} property="og:image:width" content={String(c.width)} />
+            <meta key={`og-image-im-h-${idx}`} property="og:image:height" content={String(c.height)} />
+            <meta key={`og-image-im-type-${idx}`} property="og:image:type" content={c.type} />
+            <meta key={`og-image-im-sec-${idx}`} property="og:image:secure_url" content={c.url} />
+          </>
+        ))}
         {/* OG Logo */}
         <meta property="og:logo" content={`${baseUrl}/favicon.svg`} />
         <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
