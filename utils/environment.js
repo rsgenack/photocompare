@@ -38,24 +38,28 @@ export function getBaseUrl() {
 }
 
 export function getOgImagePath(platform = 'facebook') {
-  // PNG assets optimized per platform, as requested
+  // Prefer the optimal format per platform (JPG for photographic 1.91:1 assets,
+  // PNG for text-forward square creatives)
   const basePath = '/og_svg_images';
 
   switch (platform) {
     case 'facebook':
-      return `${basePath}/facebook1200x630.png`;
+      return `${basePath}/facebook1200x630.jpg`;
     case 'twitter':
-      // Prefer 1x1 square for Twitter; fallback handled by getTwitterImagePath
-      return `${basePath}/linkedin_and_twitter_1x1.png`;
+      // Twitter Summary Card Large Image (2:1) rendered as high-quality JPG
+      return `${basePath}/twittercropped2.jpg`;
     case 'linkedin':
       return `${basePath}/LinkedIn1200×627.png`;
     case 'instagram':
-      return `${basePath}/instagram.png`;
+      return `${basePath}/instagram.jpg`;
     case 'imessage':
-      // iMessage should use the Instagram square to avoid multi-image previews
+    case 'whatsapp':
+    case 'universal':
+    case 'default':
+      // Messaging apps favour square PNGs to avoid awkward cropping
       return `${basePath}/instagram.png`;
     default:
-      return `${basePath}/facebook1200x630.png`;
+      return `${basePath}/facebook1200x630.jpg`;
   }
 }
 
@@ -73,16 +77,19 @@ export function getOgImageCandidates(platform = 'facebook') {
   // Return a SINGLE candidate per platform to avoid duplicate previews in certain apps
   switch (platform) {
     case 'facebook':
-      return [{ path: '/og_svg_images/facebook1200x630.png', type: 'image/png', width: 1200, height: 630 }];
+      return [{ path: '/og_svg_images/facebook1200x630.jpg', type: 'image/jpeg', width: 1200, height: 630 }];
     case 'linkedin':
       return [{ path: '/og_svg_images/LinkedIn1200×627.png', type: 'image/png', width: 1200, height: 627 }];
     case 'twitter':
-      return [{ path: '/og_svg_images/linkedin_and_twitter_1x1.png', type: 'image/png', width: 1200, height: 1200 }];
+      return [{ path: '/og_svg_images/twittercropped2.jpg', type: 'image/jpeg', width: 1200, height: 600 }];
     case 'instagram':
     case 'imessage':
+    case 'whatsapp':
+    case 'universal':
+    case 'default':
       return [{ path: '/og_svg_images/instagram.png', type: 'image/png', width: 1200, height: 1200 }];
     default:
-      return [{ path: '/og_svg_images/facebook1200x630.png', type: 'image/png', width: 1200, height: 630 }];
+      return [{ path: '/og_svg_images/facebook1200x630.jpg', type: 'image/jpeg', width: 1200, height: 630 }];
   }
 }
 
@@ -96,8 +103,11 @@ export function getFullOgImageCandidates(platform = 'facebook') {
 
 // Helper for Twitter-specific image with safe fallback
 export function getTwitterImageUrl() {
-  const baseUrl = getBaseUrl();
-  const primary = `${baseUrl}/og_svg_images/linkedin_and_twitter_1x1.png`;
-  const fallback = `${baseUrl}/og_svg_images/twittercropped1.png`;
-  return primary;
+  const twitterCandidate = getFullOgImageCandidates('twitter')[0];
+  if (twitterCandidate) {
+    return twitterCandidate.url;
+  }
+
+  const fallbackCandidate = getFullOgImageCandidates('universal')[0];
+  return fallbackCandidate ? fallbackCandidate.url : undefined;
 }

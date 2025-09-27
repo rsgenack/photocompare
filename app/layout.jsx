@@ -5,9 +5,48 @@ import './globals.css';
 
 // Get environment-specific URLs and OG image candidates
 const baseUrl = getBaseUrl();
+const universalCandidates = getFullOgImageCandidates('universal');
 const facebookCandidates = getFullOgImageCandidates('facebook');
-const instagramSquare = getFullOgImageCandidates('instagram');
-const twitterImage = getTwitterImageUrl();
+const linkedinCandidates = getFullOgImageCandidates('linkedin');
+const instagramCandidates = getFullOgImageCandidates('instagram');
+const twitterCandidates = getFullOgImageCandidates('twitter');
+
+const universalImage = universalCandidates[0]
+  ? {
+      ...universalCandidates[0],
+      alt: 'VOTOGRAPHER Messaging Share Image',
+    }
+  : null;
+
+const facebookImage = facebookCandidates[0]
+  ? {
+      ...facebookCandidates[0],
+      alt: 'VOTOGRAPHER Facebook Share Image',
+    }
+  : null;
+
+const linkedinImage = linkedinCandidates[0]
+  ? {
+      ...linkedinCandidates[0],
+      alt: 'VOTOGRAPHER LinkedIn Share Image',
+    }
+  : null;
+
+const instagramImage = instagramCandidates[0]
+  ? {
+      ...instagramCandidates[0],
+      alt: 'VOTOGRAPHER Instagram Share Image',
+    }
+  : null;
+
+const twitterImage = twitterCandidates[0]
+  ? {
+      ...twitterCandidates[0],
+      alt: 'VOTOGRAPHER Twitter Share Image',
+    }
+  : null;
+
+const twitterImageUrl = getTwitterImageUrl();
 
 export const metadata = {
   metadataBase: new URL(baseUrl),
@@ -28,15 +67,7 @@ export const metadata = {
     description: 'Find your best photos, easily and enjoyably',
     url: baseUrl,
     siteName: 'VOTOGRAPHER',
-    images: [
-      // Single universal OG image to satisfy iMessage: Instagram square PNG
-      ...(instagramSquare.length ? [{
-        url: instagramSquare[0].url,
-        width: instagramSquare[0].width,
-        height: instagramSquare[0].height,
-        alt: 'VOTOGRAPHER Social Image',
-      }] : []),
-    ],
+    images: [universalImage, facebookImage, linkedinImage, instagramImage].filter(Boolean),
     locale: 'en_US',
     type: 'website',
   },
@@ -44,7 +75,7 @@ export const metadata = {
     card: 'summary_large_image',
     title: 'VOTOGRAPHER',
     description: 'Find your best photos, easily and enjoyably',
-    images: [twitterImage || facebookCandidates[0]?.url],
+    images: [twitterImageUrl || twitterImage?.url || universalImage?.url].filter(Boolean),
   },
 };
 
