@@ -16,6 +16,11 @@ export const DEFAULT_RATING = 1400;
 // Default uncertainty (higher means less confident in the rating)
 export const DEFAULT_UNCERTAINTY = 400;
 
+export function makePairKey(idA, idB) {
+  if (idA == null || idB == null) return '';
+  return idA < idB ? `${idA}-${idB}` : `${idB}-${idA}`;
+}
+
 /**
  * Calculate the expected score (probability of winning) for a player
  * @param {number} ratingA - Rating of player A
@@ -153,7 +158,7 @@ function calculateEnhancedPairScore(imageA, imageB) {
  * @param {Array} remainingPairs - Array of remaining image ID pairs
  * @returns {Array} - The most informative pair [leftId, rightId]
  */
-export function findMostInformativePair(images, remainingPairs) {
+export function findMostInformativePair(images, remainingPairs, { minComparisons = 3 } = {}) {
   if (remainingPairs.length === 0) return null;
 
   let bestPair = remainingPairs[0];
@@ -166,7 +171,11 @@ export function findMostInformativePair(images, remainingPairs) {
 
     if (!leftImage || !rightImage) continue;
 
-    const infoGain = calculateEnhancedPairScore(leftImage, rightImage);
+    const shortfallLeft = Math.max(0, minComparisons - (leftImage.comparisons || 0));
+    const shortfallRight = Math.max(0, minComparisons - (rightImage.comparisons || 0));
+    const coverageBoost = shortfallLeft + shortfallRight;
+    const infoGain =
+      calculateEnhancedPairScore(leftImage, rightImage) * (1 + coverageBoost * 0.35) + coverageBoost;
 
     if (infoGain > highestInfoGain) {
       highestInfoGain = infoGain;
@@ -175,6 +184,46 @@ export function findMostInformativePair(images, remainingPairs) {
   }
 
   return bestPair;
+}
+
+export function buildCandidatePairs(
+  images,
+  { exclude = new Set(), minComparisons = 3, limit = 20 } = {},
+) {
+  if (!images || images.length < 2) return [];
+
+  const normalizedExclude = new Set(exclude);
+  const candidates = [];
+
+  for (let i = 0; i < images.length; i++) {
+    for (let j = i + 1; j < images.length; j++) {
+      const imageA = images[i];
+      const imageB = images[j];
+      const key = makePairKey(imageA.id, imageB.id);
+      if (!key || normalizedExclude.has(key)) continue;
+
+      const shortfallA = Math.max(0, minComparisons - (imageA.comparisons || 0));
+      const shortfallB = Math.max(0, minComparisons - (imageB.comparisons || 0));
+      const coverageBoost = shortfallA + shortfallB;
+      const scarcityMultiplier = 1 + coverageBoost * 0.35;
+      const comparisonsGap = Math.abs((imageA.comparisons || 0) - (imageB.comparisons || 0));
+      const balanceMultiplier = Math.max(0.6, 1 - comparisonsGap * 0.1);
+
+      const score =
+        calculateEnhancedPairScore(imageA, imageB) * scarcityMultiplier * balanceMultiplier + coverageBoost;
+
+      candidates.push({ pair: [imageA.id, imageB.id], score, coverageBoost });
+    }
+  }
+
+  candidates.sort((a, b) => {
+    if (b.coverageBoost !== a.coverageBoost) {
+      return b.coverageBoost - a.coverageBoost;
+    }
+    return b.score - a.score;
+  });
+
+  return candidates.slice(0, Math.max(0, limit)).map((entry) => entry.pair);
 }
 
 /**
