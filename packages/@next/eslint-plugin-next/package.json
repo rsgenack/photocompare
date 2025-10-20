@@ -1,0 +1,9 @@
+{
+  "name": "@next/eslint-plugin-next",
+  "version": "15.2.4",
+  "main": "index.js",
+  "type": "commonjs",
+  "peerDependencies": {
+    "eslint": ">=8.57.0"
+  }
+}
