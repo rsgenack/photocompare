@@ -7,8 +7,10 @@ import {
     calculateConfidence,
     DEFAULT_RATING,
     DEFAULT_UNCERTAINTY,
+    buildCandidatePairs,
     findMostInformativePair,
     hasEnoughConfidenceEnhanced,
+    makePairKey,
     updateRatingsAdaptive,
     updateUncertainties,
 } from '@/utils/elo-rating';
@@ -35,9 +37,8 @@ export default function PhotoCompare() {
   const [step, setStep] = useState('splash');
   const [comparisonType, setComparisonType] = useState('');
   const [uploadedImages, setUploadedImages] = useState([]);
-  const [allPairs, setAllPairs] = useState([]);
   const [currentPair, setCurrentPair] = useState(null);
-  const [remainingPairs, setRemainingPairs] = useState([]);
+  const [comparisonQueue, setComparisonQueue] = useState([]);
   const [completedComparisons, setCompletedComparisons] = useState({});
   const [zoom, setZoom] = useState(100);
   const [progress, setProgress] = useState(0);
@@ -51,8 +52,10 @@ export default function PhotoCompare() {
   const [processingSelection, setProcessingSelection] = useState(false); // Add state to track selection processing
   const [overlayMode, setOverlayMode] = useState('slider'); // For versions: 'slider' or 'side-by-side'
 
-  // Derived completion flag
-  const isDone = allPairs.length > 0 && Object.keys(completedComparisons).length >= allPairs.length;
+  const effectiveMinComparisons = Math.min(
+    minComparisons,
+    Math.max(1, uploadedImages.length - 1),
+  );
 
   // Add this inside the component body, after the state declarations:
   useEffect(() => {
@@ -67,9 +70,63 @@ export default function PhotoCompare() {
     };
   }, []);
 
-  const memoizedFindMostInformativePair = useCallback((images, pairs) => {
-    return findMostInformativePair(images, pairs);
+  const memoizedFindMostInformativePair = useCallback((images, pairs, options = {}) => {
+    return findMostInformativePair(images, pairs, options);
   }, []);
+
+  const replenishQueue = useCallback(
+    (images, completedMap, existingQueue = [], extraExclusions = []) => {
+      if (!images || images.length < 2) return [];
+
+      const targetSize = Math.max(6, images.length * 2);
+      const queue = [...existingQueue];
+      const queueKeys = new Set(queue.map(([a, b]) => makePairKey(a, b)));
+      const exclude = new Set([...queueKeys, ...extraExclusions]);
+      Object.keys(completedMap || {}).forEach((key) => exclude.add(key));
+
+      const suggestions = buildCandidatePairs(images, {
+        exclude,
+        minComparisons: effectiveMinComparisons,
+        limit: targetSize * 2,
+      });
+
+      for (const pair of suggestions) {
+        const key = makePairKey(pair[0], pair[1]);
+        if (queueKeys.has(key)) continue;
+        queue.push(pair);
+        queueKeys.add(key);
+        if (queue.length >= targetSize) break;
+      }
+
+      if (queue.length < targetSize) {
+        const imageMap = new Map(images.map((img) => [img.id, img]));
+        const fallbackExclude = new Set(queueKeys);
+        const fallbackSuggestions = buildCandidatePairs(images, {
+          exclude: fallbackExclude,
+          minComparisons: effectiveMinComparisons,
+          limit: targetSize * 2,
+        });
+
+        for (const pair of fallbackSuggestions) {
+          const key = makePairKey(pair[0], pair[1]);
+          if (queueKeys.has(key)) continue;
+          const imgA = imageMap.get(pair[0]);
+          const imgB = imageMap.get(pair[1]);
+          if (!imgA || !imgB) continue;
+          const needsCoverage =
+            (imgA.comparisons || 0) < effectiveMinComparisons ||
+            (imgB.comparisons || 0) < effectiveMinComparisons;
+          if (!needsCoverage) continue;
+          queue.push(pair);
+          queueKeys.add(key);
+          if (queue.length >= targetSize) break;
+        }
+      }
+
+      return queue;
+    },
+    [effectiveMinComparisons],
+  );
 
   // Handle step changes with scroll to top
   const changeStep = useCallback((newStep) => {
@@ -201,7 +258,6 @@ export default function PhotoCompare() {
   // Add debug logging to the selectWinner function
   const selectWinner = useCallback(
     (winnerId) => {
-      if (isDone) return;
       if (processingSelection) {
         return;
       }
@@ -212,7 +268,7 @@ export default function PhotoCompare() {
       }
       try {
         const [left, right] = currentPair;
-        const pairKey = left.id < right.id ? `${left.id}-${right.id}` : `${right.id}-${left.id}`;
+        const pairKey = makePairKey(left.id, right.id);
         const loserId = left.id === winnerId ? right.id : left.id;
         const updatedCompletedComparisons = {
           ...completedComparisons,
@@ -257,50 +313,46 @@ export default function PhotoCompare() {
           return img;
         });
         setUploadedImages(updatedImages);
-        // Remove the current pair from remainingPairs
-        const newRemainingPairs = remainingPairs.filter((pair) => {
-          const match =
-            (pair[0] === left.id && pair[1] === right.id) ||
-            (pair[0] === right.id && pair[1] === left.id);
-          return !match;
-        });
-        // Set the next pair if available
-        if (newRemainingPairs.length > 0) {
-          // Choose most informative next pair based on updated images
-          const bestPair = memoizedFindMostInformativePair(updatedImages, newRemainingPairs);
+
+        const filteredQueue = comparisonQueue.filter((pair) => makePairKey(pair[0], pair[1]) !== pairKey);
+        const refilledQueue = replenishQueue(updatedImages, updatedCompletedComparisons, filteredQueue);
+        let nextPairIds = null;
+        let nextQueue = refilledQueue;
+
+        if (refilledQueue.length > 0) {
+          const bestPair = memoizedFindMostInformativePair(updatedImages, refilledQueue, {
+            minComparisons: effectiveMinComparisons,
+          });
           if (bestPair) {
-            const [nextLeftId, nextRightId] = bestPair;
-            const nextLeft = updatedImages.find((img) => img.id === nextLeftId);
-            const nextRight = updatedImages.find((img) => img.id === nextRightId);
-            if (nextLeft && nextRight) {
-              setCurrentPair([nextLeft, nextRight]);
-              setRemainingPairs(
-                newRemainingPairs.filter(
-                  (pair) =>
-                    !(
-                      (pair[0] === nextLeftId && pair[1] === nextRightId) ||
-                      (pair[0] === nextRightId && pair[1] === nextLeftId)
-                    ),
-                ),
-              );
-            } else {
-              setCurrentPair(null);
-            }
+            const nextKey = makePairKey(bestPair[0], bestPair[1]);
+            nextPairIds = bestPair;
+            nextQueue = refilledQueue.filter((pair) => makePairKey(pair[0], pair[1]) !== nextKey);
+          }
+        }
+
+        if (nextPairIds) {
+          const [nextLeftId, nextRightId] = nextPairIds;
+          const nextLeft = updatedImages.find((img) => img.id === nextLeftId);
+          const nextRight = updatedImages.find((img) => img.id === nextRightId);
+          if (nextLeft && nextRight) {
+            setCurrentPair([nextLeft, nextRight]);
+            setComparisonQueue(nextQueue);
           } else {
-            // Fallback to first remaining pair
-            const [nextLeftId, nextRightId] = newRemainingPairs[0];
-            const nextLeft = updatedImages.find((img) => img.id === nextLeftId);
-            const nextRight = updatedImages.find((img) => img.id === nextRightId);
-            if (nextLeft && nextRight) {
-              setCurrentPair([nextLeft, nextRight]);
-              setRemainingPairs(newRemainingPairs.slice(1));
-            } else {
-              setCurrentPair(null);
-            }
+            setCurrentPair(null);
+            setComparisonQueue(nextQueue);
           }
         } else {
-          calculateFinalRankings();
-          changeStep('results');
+          setCurrentPair(null);
+          setComparisonQueue([]);
+          const canStop = hasEnoughConfidenceEnhanced(updatedImages, {
+            minConfidence: confidenceThreshold,
+            minComparisons: effectiveMinComparisons,
+            adjacentMargin: 30,
+          });
+          if (canStop || Object.keys(updatedCompletedComparisons).length > 0) {
+            calculateFinalRankings();
+            changeStep('results');
+          }
         }
         setCompletedComparisons(updatedCompletedComparisons);
       } catch (err) {
@@ -313,13 +365,16 @@ export default function PhotoCompare() {
     },
     [
       currentPair,
-      remainingPairs,
+      comparisonQueue,
       uploadedImages,
       completedComparisons,
       calculateFinalRankings,
       changeStep,
       processingSelection,
-      isDone,
+      memoizedFindMostInformativePair,
+      replenishQueue,
+      confidenceThreshold,
+      effectiveMinComparisons,
     ],
   );
 
@@ -328,7 +383,6 @@ export default function PhotoCompare() {
     const handleKeyDown = (e) => {
       // Only process keyboard events when in compare mode with a valid pair
       if (step !== 'compare' || !currentPair || !currentPair[0] || !currentPair[1]) return;
-      if (isDone) return;
 
       // Check for arrow keys
       if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
@@ -362,7 +416,7 @@ export default function PhotoCompare() {
     return () => {
       window.removeEventListener('keydown', handleKeyDown, { capture: true });
     };
-  }, [step, currentPair, selectWinner, processingSelection, isDone]);
+  }, [step, currentPair, selectWinner, processingSelection]);
 
   const handleImagesUploaded = useCallback(
     (newImages) => {
@@ -401,6 +455,9 @@ export default function PhotoCompare() {
     if (dimensionsOk) {
       changeStep('compare');
       setCompletedComparisons({});
+      setComparisonQueue([]);
+      setCurrentPair(null);
+      setProcessingSelection(false);
       setError(null);
     } else if (comparisonType === 'versions') {
       // Don't proceed if dimensions check failed for versions
@@ -409,6 +466,9 @@ export default function PhotoCompare() {
       // For "different" type, we can proceed regardless
       changeStep('compare');
       setCompletedComparisons({});
+      setComparisonQueue([]);
+      setCurrentPair(null);
+      setProcessingSelection(false);
       setError(null);
     }
   }, [changeStep, checkImageDimensions, setError, comparisonType]);
@@ -418,6 +478,9 @@ export default function PhotoCompare() {
     setShowDimensionWarning(false);
     changeStep('compare');
     setCompletedComparisons({});
+    setComparisonQueue([]);
+    setCurrentPair(null);
+    setProcessingSelection(false);
     setError(null);
   }, [changeStep, setError]);
 
@@ -426,8 +489,7 @@ export default function PhotoCompare() {
     setComparisonType('');
     setCompletedComparisons({});
     setCurrentPair(null);
-    setAllPairs([]);
-    setRemainingPairs([]);
+    setComparisonQueue([]);
     setProgress(0);
     setUploadedImages([]);
     setError(null);
@@ -496,79 +558,72 @@ export default function PhotoCompare() {
 
   const handleRemoveImage = useCallback(
     (imageId) => {
-      // Remove the image from uploadedImages
-      setUploadedImages((prev) => {
-        const updated = prev.filter((img) => img.id !== imageId);
+      const updatedImages = uploadedImages.filter((img) => img.id !== imageId);
 
-        // If no images left, reset to upload page
-        if (updated.length < 2 && step === 'compare') {
-          setError('At least 2 images are required for comparison');
-          changeStep('upload');
-        }
+      if (updatedImages.length < 2 && step === 'compare') {
+        setError('At least 2 images are required for comparison');
+        changeStep('upload');
+      }
 
-        return updated;
-      });
-
-      // Remove any pairs containing this image from remainingPairs
-      setRemainingPairs((prev) =>
-        prev.filter(([leftId, rightId]) => leftId !== imageId && rightId !== imageId),
+      const filteredComparisons = Object.fromEntries(
+        Object.entries(completedComparisons).filter(([pairKey, winner]) => {
+          return !pairKey.includes(imageId) && winner !== imageId;
+        }),
       );
 
-      // Remove any pairs containing this image from allPairs
-      setAllPairs((prev) =>
-        prev.filter(([leftId, rightId]) => leftId !== imageId && rightId !== imageId),
+      let filteredQueue = comparisonQueue.filter(
+        ([leftId, rightId]) => leftId !== imageId && rightId !== imageId,
       );
 
-      // Remove any completed comparisons involving this image
-      setCompletedComparisons((prev) => {
-        const updatedComparisons = { ...prev };
-        // Filter out any pair keys that contain the removed image id
-        Object.keys(updatedComparisons).forEach((pairKey) => {
-          if (pairKey.includes(imageId) || updatedComparisons[pairKey] === imageId) {
-            delete updatedComparisons[pairKey];
-          }
-        });
-        return updatedComparisons;
-      });
-
-      // If current pair contains the removed image, move to next pair
+      let nextPair = currentPair;
       if (currentPair && (currentPair[0]?.id === imageId || currentPair[1]?.id === imageId)) {
-        if (remainingPairs.length > 0) {
-          // Find the next most informative pair
-          const updatedImages = uploadedImages.filter((img) => img.id !== imageId);
-          const bestPair = memoizedFindMostInformativePair(updatedImages, remainingPairs);
-
+        const refilledQueue = replenishQueue(updatedImages, filteredComparisons, filteredQueue);
+        filteredQueue = refilledQueue;
+        if (refilledQueue.length > 0) {
+          const bestPair = memoizedFindMostInformativePair(updatedImages, refilledQueue, {
+            minComparisons: effectiveMinComparisons,
+          });
           if (bestPair) {
             const [nextLeftId, nextRightId] = bestPair;
             const nextLeft = updatedImages.find((img) => img.id === nextLeftId);
             const nextRight = updatedImages.find((img) => img.id === nextRightId);
-
             if (nextLeft && nextRight) {
-              setCurrentPair([nextLeft, nextRight]);
-              // Remove this pair from remaining pairs
-              setRemainingPairs((prev) =>
-                prev.filter(
-                  (pair) =>
-                    !(
-                      (pair[0] === nextLeftId && pair[1] === nextRightId) ||
-                      (pair[0] === nextRightId && pair[1] === nextLeftId)
-                    ),
-                ),
+              nextPair = [nextLeft, nextRight];
+              const nextKey = makePairKey(nextLeftId, nextRightId);
+              filteredQueue = refilledQueue.filter(
+                (pair) => makePairKey(pair[0], pair[1]) !== nextKey,
               );
+            } else {
+              nextPair = null;
             }
-          } else if (remainingPairs.length > 0) {
-            // If no best pair found but pairs remain, just use the first one
-            const [nextLeftId, nextRightId] = remainingPairs[0];
-            const nextLeft = updatedImages.find((img) => img.id === nextLeftId);
-            const nextRight = updatedImages.find((img) => img.id === nextRightId);
-
-            if (nextLeft && nextRight) {
-              setCurrentPair([nextLeft, nextRight]);
-              setRemainingPairs((prev) => prev.slice(1));
-            }
+          } else {
+            nextPair = null;
           }
         } else {
-          // If no more pairs, go to results
+          nextPair = null;
+        }
+      } else if (nextPair) {
+        const nextLeft = updatedImages.find((img) => img.id === nextPair[0]?.id);
+        const nextRight = updatedImages.find((img) => img.id === nextPair[1]?.id);
+        if (nextLeft && nextRight) {
+          nextPair = [nextLeft, nextRight];
+        } else {
+          nextPair = null;
+        }
+      }
+
+      setUploadedImages(updatedImages);
+      setCompletedComparisons(filteredComparisons);
+      setComparisonQueue(filteredQueue);
+      setCurrentPair(nextPair);
+
+      if (!nextPair && step === 'compare' && updatedImages.length >= 2) {
+        const canStop = hasEnoughConfidenceEnhanced(updatedImages, {
+          minConfidence: confidenceThreshold,
+          minComparisons: effectiveMinComparisons,
+          adjacentMargin: 30,
+        });
+        if (canStop || filteredQueue.length === 0) {
           calculateFinalRankings();
           changeStep('results');
         }
@@ -576,22 +631,31 @@ export default function PhotoCompare() {
     },
     [
       uploadedImages,
-      remainingPairs,
       currentPair,
       calculateFinalRankings,
       changeStep,
       step,
       memoizedFindMostInformativePair,
+      comparisonQueue,
+      completedComparisons,
+      replenishQueue,
+      confidenceThreshold,
+      effectiveMinComparisons,
     ],
   );
 
-  // Initialize pairs and start comparison when images are uploaded or comparison type changes
   useEffect(() => {
-    if (!(uploadedImages.length >= 2 && comparisonType)) return;
-    // If we're already comparing and pairs are initialized, don't reset them on rating updates
-    if (step === 'compare' && allPairs.length > 0) return;
+    if (!(uploadedImages.length >= 2 && comparisonType && step === 'compare')) return;
 
-    // Ensure Elo defaults are present only if missing to avoid loops
+    if (
+      currentPair ||
+      comparisonQueue.length > 0 ||
+      Object.keys(completedComparisons).length > 0 ||
+      processingSelection
+    ) {
+      return;
+    }
+
     const needsNormalization = uploadedImages.some(
       (img) => img.rating == null || img.uncertainty == null || img.comparisons == null,
     );
@@ -607,79 +671,88 @@ export default function PhotoCompare() {
       return;
     }
 
-    // Generate all possible pairs of images (excluding self-comparisons)
-    const newPairs = [];
-    for (let i = 0; i < uploadedImages.length; i++) {
-      for (let j = i + 1; j < uploadedImages.length; j++) {
-        // Only create pairs with different images
-        if (uploadedImages[i].id !== uploadedImages[j].id) {
-          newPairs.push([uploadedImages[i].id, uploadedImages[j].id]);
+    const seededQueue = replenishQueue(uploadedImages, {}, []);
+    let nextPair = null;
+    let nextQueue = seededQueue;
+
+    if (seededQueue.length > 0) {
+      const bestPair = memoizedFindMostInformativePair(uploadedImages, seededQueue, {
+        minComparisons: effectiveMinComparisons,
+      });
+      const selected = bestPair || seededQueue[0];
+      if (selected) {
+        const [leftId, rightId] = selected;
+        const leftImage = uploadedImages.find((img) => img.id === leftId);
+        const rightImage = uploadedImages.find((img) => img.id === rightId);
+        if (leftImage && rightImage) {
+          nextPair = [leftImage, rightImage];
+          const selectedKey = makePairKey(leftId, rightId);
+          nextQueue = seededQueue.filter((pair) => makePairKey(pair[0], pair[1]) !== selectedKey);
         }
       }
     }
 
-    // Initialize allPairs and remainingPairs
-    setAllPairs(newPairs);
-    setRemainingPairs(newPairs);
-
-    // Find the best pair to start with
-    const bestPair = findMostInformativePair(uploadedImages, newPairs);
-
-    if (bestPair) {
-      const [nextLeftId, nextRightId] = bestPair;
-      const nextLeft = uploadedImages.find((img) => img.id === nextLeftId);
-      const nextRight = uploadedImages.find((img) => img.id === nextRightId);
-
-      if (nextLeft && nextRight) {
-        setCurrentPair([nextLeft, nextRight]);
-        // Remove this pair from remaining pairs
-        setRemainingPairs((prev) =>
-          prev.filter(
-            (pair) =>
-              !(
-                (pair[0] === nextLeftId && pair[1] === nextRightId) ||
-                (pair[0] === nextRightId && pair[1] === nextLeftId)
-              ),
-          ),
-        );
-      }
-    }
-
-    // Reset progress
+    setCurrentPair(nextPair);
+    setComparisonQueue(nextQueue);
     setProgress(0);
-
-    // Reset processing flag
     setProcessingSelection(false);
-  }, [uploadedImages, comparisonType, step, allPairs.length]);
+  }, [
+    uploadedImages,
+    comparisonType,
+    step,
+    currentPair,
+    comparisonQueue.length,
+    completedComparisons,
+    processingSelection,
+    replenishQueue,
+    memoizedFindMostInformativePair,
+    effectiveMinComparisons,
+  ]);
 
-  // Update progress based on completed comparisons
   useEffect(() => {
-    if (allPairs.length > 0) {
-      const completedCount = Object.keys(completedComparisons).length;
-      const newProgress = (completedCount / allPairs.length) * 100;
-      setProgress(newProgress);
-      // Auto-finish when we have completed all pairs
-      if (step === 'compare') {
-        // Stronger stop condition for full ordering
-        const canStop = hasEnoughConfidenceEnhanced(uploadedImages, {
-          minConfidence: confidenceThreshold,
-          minComparisons,
-          adjacentMargin: 30,
-        });
-        if (canStop || completedCount >= allPairs.length) {
-          calculateFinalRankings();
-          changeStep('results');
-        }
+    const completedCount = Object.keys(completedComparisons).length;
+    const outstanding = comparisonQueue.length + (currentPair ? 1 : 0);
+    const targetBase = uploadedImages.length
+      ? (uploadedImages.length * effectiveMinComparisons) / 2
+      : 0;
+    const target = Math.max(targetBase, completedCount + outstanding);
+
+    if (target > 0) {
+      setProgress(Math.min(100, (completedCount / target) * 100));
+    } else {
+      setProgress(0);
+    }
+
+    if (step === 'compare') {
+      const canStop = hasEnoughConfidenceEnhanced(uploadedImages, {
+        minConfidence: confidenceThreshold,
+        minComparisons: effectiveMinComparisons,
+        adjacentMargin: 30,
+      });
+
+      if (canStop) {
+        calculateFinalRankings();
+        changeStep('results');
       }
     }
-  }, [completedComparisons, allPairs.length]);
+  }, [
+    completedComparisons,
+    comparisonQueue.length,
+    currentPair,
+    uploadedImages,
+    effectiveMinComparisons,
+    confidenceThreshold,
+    calculateFinalRankings,
+    changeStep,
+    step,
+  ]);
 
   // Auto-advance to results if confidence is high enough
   useEffect(() => {
     if (autoAdvance && step === 'compare' && uploadedImages.length > 0) {
       // Check if all images have been compared enough times
       const allComparedEnough = uploadedImages.every(
-        (img) => (img.comparisons || 0) >= minComparisons,
+        (img) => (img.comparisons || 0) >= effectiveMinComparisons,
       );
 
       // Calculate average confidence
@@ -698,7 +771,7 @@ export default function PhotoCompare() {
     step,
     uploadedImages,
     confidenceThreshold,
-    minComparisons,
+    effectiveMinComparisons,
     calculateFinalRankings,
     changeStep,
   ]);
@@ -790,11 +863,11 @@ export default function PhotoCompare() {
           <div className="border-t-2 border-b-2 border-black py-3 md:py-4 flex flex-col md:flex-row justify-between items-center gap-2 mb-4 md:mb-6">
             <div className="text-base md:text-lg font-medium text-black">
               {(() => {
-                const base = remainingPairs.length;
+                const base = comparisonQueue.length;
                 if (base === 0) return 0;
                 const canStop = hasEnoughConfidenceEnhanced(uploadedImages, {
                   minConfidence: confidenceThreshold,
-                  minComparisons,
+                  minComparisons: effectiveMinComparisons,
                   adjacentMargin: 30,
                 });
                 if (canStop) return 0;
@@ -807,7 +880,8 @@ export default function PhotoCompare() {
                 // Ensure per-image coverage requirement isn’t under-reported
                 const coveragePairs = Math.ceil(
                   uploadedImages.reduce(
-                    (sum, img) => sum + Math.max(0, minComparisons - (img.comparisons || 0)),
+                    (sum, img) =>
+                      sum + Math.max(0, effectiveMinComparisons - (img.comparisons || 0)),
                     0,
                   ) / 2,
                 );
@@ -857,20 +931,16 @@ export default function PhotoCompare() {
           {/* Fullscreen controls */}
           <FullScreenCompare
             progress={progress}
-            remaining={formatNumber(remainingPairs.length)}
+            remaining={formatNumber(comparisonQueue.length)}
             leftImage={currentPair[0]}
             rightImage={currentPair[1]}
             onSelectLeft={() => {
-              if (!isDone) {
-                trackEvent('select_photo', { side: 'left' });
-                selectWinner(currentPair[0].id);
-              }
+              trackEvent('select_photo', { side: 'left' });
+              selectWinner(currentPair[0].id);
             }}
             onSelectRight={() => {
-              if (!isDone) {
-                trackEvent('select_photo', { side: 'right' });
-                selectWinner(currentPair[1].id);
-              }
+              trackEvent('select_photo', { side: 'right' });
+              selectWinner(currentPair[1].id);
             }}
             onRemoveLeft={(id) => handleRemoveImage(id)}
             onRemoveRight={(id) => handleRemoveImage(id)}
@@ -883,10 +953,10 @@ export default function PhotoCompare() {
             zoom={zoom}
             setZoom={setZoom}
             onSelectLeft={() => {
-              if (!isDone) selectWinner(currentPair[0].id);
+              selectWinner(currentPair[0].id);
             }}
             onSelectRight={() => {
-              if (!isDone) selectWinner(currentPair[1].id);
+              selectWinner(currentPair[1].id);
             }}
             onRemoveImage={handleRemoveImage}
             aspectRatio={comparisonType === 'versions' ? imageAspectRatio : null}
