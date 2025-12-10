@@ -7,8 +7,10 @@
 
 // Default K-factor (determines how much ratings change after each comparison)
 export const DEFAULT_K = 32;
-export const MIN_K = 8;
-export const MAX_K = 48;
+// For large sets we want ratings to converge a bit faster, so allow a slightly
+// higher K-band while keeping the classic DEFAULT_K as the mid-point.
+export const MIN_K = 10;
+export const MAX_K = 56;
 
 // Default starting rating
 export const DEFAULT_RATING = 1400;
@@ -80,9 +82,10 @@ export function updateRatingsAdaptive(
  * @returns {object} - New uncertainties for winner and loser
  */
 export function updateUncertainties(uncertaintyWinner, uncertaintyLoser) {
-  // Reduce uncertainty more when it's higher
-  const newUncertaintyWinner = Math.max(uncertaintyWinner * 0.95, 50);
-  const newUncertaintyLoser = Math.max(uncertaintyLoser * 0.95, 50);
+  // Reduce uncertainty more when it's higher; shrink slightly faster so
+  // confidence thresholds are reached with fewer comparisons on large sets.
+  const newUncertaintyWinner = Math.max(uncertaintyWinner * 0.9, 50);
+  const newUncertaintyLoser = Math.max(uncertaintyLoser * 0.9, 50);
 
   return {
     winner: newUncertaintyWinner,
@@ -188,7 +191,7 @@ export function findMostInformativePair(images, remainingPairs, { minComparisons
 
 export function buildCandidatePairs(
   images,
-  { exclude = new Set(), minComparisons = 3, limit = 20 } = {},
+  { exclude = new Set(), minComparisons = 3, limit = 20, focusIds = null } = {},
 ) {
   if (!images || images.length < 2) return [];
 
@@ -202,15 +205,23 @@ export function buildCandidatePairs(
       const key = makePairKey(imageA.id, imageB.id);
       if (!key || normalizedExclude.has(key)) continue;
 
+      const isFocusPair =
+        !focusIds || focusIds.has(imageA.id) || focusIds.has(imageB.id);
+
       const shortfallA = Math.max(0, minComparisons - (imageA.comparisons || 0));
       const shortfallB = Math.max(0, minComparisons - (imageB.comparisons || 0));
       const coverageBoost = shortfallA + shortfallB;
       const scarcityMultiplier = 1 + coverageBoost * 0.35;
       const comparisonsGap = Math.abs((imageA.comparisons || 0) - (imageB.comparisons || 0));
       const balanceMultiplier = Math.max(0.6, 1 - comparisonsGap * 0.1);
+      const focusMultiplier = isFocusPair ? 1.5 : 1.0;
 
       const score =
-        calculateEnhancedPairScore(imageA, imageB) * scarcityMultiplier * balanceMultiplier + coverageBoost;
+        calculateEnhancedPairScore(imageA, imageB) *
+          scarcityMultiplier *
+          balanceMultiplier *
+          focusMultiplier +
+        coverageBoost;
 
       candidates.push({ pair: [imageA.id, imageB.id], score, coverageBoost });
     }
@@ -257,11 +268,20 @@ export function hasEnoughConfidence(images, minConfidence = 70, minComparisons =
  */
 export function hasEnoughConfidenceEnhanced(
   images,
-  { minConfidence = 70, minComparisons = 3, adjacentMargin = 30 } = {},
+  { minConfidence = 70, minComparisons = 3, adjacentMargin = 30, topK = null } = {},
 ) {
   if (!images || images.length === 0) return false;
 
-  const allComparedEnough = images.every((img) => (img.comparisons || 0) >= minComparisons);
+  // Focus stopping condition on the most important part of the ranking when
+  // dealing with large sets. If topK is provided, we only require coverage and
+  // separation within that leading slice.
+  const sortedByRating = [...images].sort((a, b) => (b.rating || 0) - (a.rating || 0));
+  const focus =
+    topK && topK > 0 && topK < sortedByRating.length
+      ? sortedByRating.slice(0, topK)
+      : sortedByRating;
+
+  const allComparedEnough = focus.every((img) => (img.comparisons || 0) >= minComparisons);
   if (!allComparedEnough) return false;
 
   // Median confidence
@@ -274,10 +294,9 @@ export function hasEnoughConfidenceEnhanced(
   if (median < minConfidence) return false;
 
   // Adjacent separation check
-  const sorted = [...images].sort((a, b) => (b.rating || 0) - (a.rating || 0));
-  for (let i = 0; i < sorted.length - 1; i++) {
-    const a = sorted[i];
-    const b = sorted[i + 1];
+  for (let i = 0; i < focus.length - 1; i++) {
+    const a = focus[i];
+    const b = focus[i + 1];
     if ((a.rating || 0) - (b.rating || 0) < adjacentMargin) {
       return false;
     }
