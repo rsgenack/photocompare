@@ -809,7 +809,7 @@ export default function PhotoCompare() {
           return sum + calculateConfidence(img.uncertainty || DEFAULT_UNCERTAINTY);
         }, 0) / uploadedImages.length;
 
-      if (allComparedEnough && avgConfidence >= confidenceThreshold) {
+      if (allComparedEnough && avgConfidence >= dynamicConfidenceThreshold) {
         calculateFinalRankings();
         changeStep('results');
       }

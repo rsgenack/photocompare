@@ -207,6 +207,10 @@ export function buildCandidatePairs(
 
       const isFocusPair =
         !focusIds || focusIds.has(imageA.id) || focusIds.has(imageB.id);
+      // When a focus band is provided (large sets), skip pairs where neither
+      // image is in the focus set so we don't waste comparisons on pure tail
+      // items that don't affect the top rankings.
+      if (focusIds && !isFocusPair) continue;
 
       const shortfallA = Math.max(0, minComparisons - (imageA.comparisons || 0));
       const shortfallB = Math.max(0, minComparisons - (imageB.comparisons || 0));
@@ -272,6 +276,12 @@ export function hasEnoughConfidenceEnhanced(
 ) {
   if (!images || images.length === 0) return false;
 
+  // Require that every image has been seen at least once so that the final
+  // ranking always includes a meaningful score for every item, even in large
+  // sets where we otherwise focus on just the top band.
+  const allSeenAtLeastOnce = images.every((img) => (img.comparisons || 0) >= 1);
+  if (!allSeenAtLeastOnce) return false;
+
   // Focus stopping condition on the most important part of the ranking when
   // dealing with large sets. If topK is provided, we only require coverage and
   // separation within that leading slice.
@@ -285,7 +295,7 @@ export function hasEnoughConfidenceEnhanced(
   if (!allComparedEnough) return false;
 
   // Median confidence
-  const confidences = images
+  const confidences = focus
     .map((img) => calculateConfidence(img.uncertainty || DEFAULT_UNCERTAINTY))
     .sort((a, b) => a - b);
   const mid = Math.floor(confidences.length / 2);
