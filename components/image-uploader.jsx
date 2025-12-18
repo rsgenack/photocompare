@@ -1,7 +1,7 @@
 'use client';
 
 import { cn } from '@/lib/utils';
-import { compressImages } from '@/utils/image-compression';
+import { compressImage } from '@/utils/image-compression';
 import { ArrowRight, ImageIcon, Loader2, Upload } from 'lucide-react';
 import { useCallback, useRef, useState } from 'react';
 
@@ -34,46 +34,48 @@ export default function ImageUploader({ onImagesUploaded }) {
           return;
         }
 
-        // Check if any files exceed the size limit
-        const oversizedFiles = imageFiles.filter((file) => file.size > 10 * 1024 * 1024);
-
-        if (oversizedFiles.length > 0) {
+        const shouldShowCompression = imageFiles.some((file) => file.size > 2 * 1024 * 1024);
+        if (shouldShowCompression) {
           setIsCompressing(true);
           setCompressionProgress(0);
-
-          // Show compression message
-          console.log(`Compressing ${oversizedFiles.length} oversized images...`);
-
-          // Compress all images (this will only actually compress the oversized ones)
-          const compressedFiles = await compressImages(imageFiles);
-
-          setIsCompressing(false);
-          setCompressionProgress(100);
-
-          // Create image objects from the compressed files
-          const newImages = compressedFiles.map((file) => ({
-            id: crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2),
-            name: file.name,
-            url: URL.createObjectURL(file),
-            file,
-            compressed: file.size < imageFiles.find((f) => f.name === file.name).size,
-          }));
-
-          onImagesUploaded(newImages);
-          setError(null);
-        } else {
-          // No compression needed
-          const newImages = imageFiles.map((file) => ({
-            id: crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2),
-            name: file.name,
-            url: URL.createObjectURL(file),
-            file,
-            compressed: false,
-          }));
-
-          onImagesUploaded(newImages);
-          setError(null);
         }
+
+        const compressedFiles = [];
+
+        for (let i = 0; i < imageFiles.length; i++) {
+          const file = imageFiles[i];
+          try {
+            const compressed = await compressImage(file);
+            compressedFiles.push(compressed);
+          } catch (compressionError) {
+            console.error('Compression failed for', file.name, compressionError);
+            // Fallback to original file if compression fails so upload still succeeds
+            compressedFiles.push(file);
+          } finally {
+            if (shouldShowCompression) {
+              setCompressionProgress(Math.round(((i + 1) / imageFiles.length) * 100));
+            }
+          }
+        }
+
+        if (shouldShowCompression) {
+          setIsCompressing(false);
+        }
+
+        // Create image objects from the compressed files
+        const newImages = compressedFiles.map((file, index) => {
+          const originalFile = imageFiles[index];
+          return {
+            id: crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2),
+            name: file.name,
+            url: URL.createObjectURL(file),
+            file,
+            compressed: file.size < originalFile.size,
+          };
+        });
+
+        onImagesUploaded(newImages);
+        setError(null);
       } catch (err) {
         console.error('Error processing files:', err);
         setError('Error processing files. Please try again.');
