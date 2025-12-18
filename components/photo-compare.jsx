@@ -42,7 +42,6 @@ export default function PhotoCompare() {
   const [completedComparisons, setCompletedComparisons] = useState({});
   const [zoom, setZoom] = useState(100);
   const [progress, setProgress] = useState(0);
-  const [remainingEstimate, setRemainingEstimate] = useState(0);
   const [error, setError] = useState(null);
   const [showDimensionWarning, setShowDimensionWarning] = useState(false);
   const [confidenceThreshold, setConfidenceThreshold] = useState(75); // Minimum confidence to stop comparisons
@@ -53,40 +52,9 @@ export default function PhotoCompare() {
   const [processingSelection, setProcessingSelection] = useState(false); // Add state to track selection processing
   const [overlayMode, setOverlayMode] = useState('slider'); // For versions: 'slider' or 'side-by-side'
 
-  const imageCount = uploadedImages.length;
-
-  // Dynamically relax comparison requirements and stopping thresholds for large
-  // sets so users don't have to make an excessive number of selections while
-  // still keeping the top of the ranking accurate.
-  let dynamicMinComparisons = minComparisons;
-  let dynamicConfidenceThreshold = confidenceThreshold;
-  let dynamicAdjacentMargin = 30;
-  let dynamicTopK = null;
-
-  if (imageCount > 0 && imageCount <= 40) {
-    // Small sets: keep original behavior.
-    dynamicMinComparisons = minComparisons;
-    dynamicConfidenceThreshold = confidenceThreshold;
-    dynamicAdjacentMargin = 30;
-    dynamicTopK = null;
-  } else if (imageCount > 40 && imageCount <= 120) {
-    // Medium sets: slightly relax requirements and focus on the top band.
-    dynamicMinComparisons = Math.min(2, minComparisons);
-    dynamicConfidenceThreshold = Math.min(confidenceThreshold, 72);
-    dynamicAdjacentMargin = 25;
-    dynamicTopK = 20;
-  } else if (imageCount > 120) {
-    // Large sets (e.g., 100–200+): aggressively reduce per-image coverage,
-    // lower confidence a bit, and focus on a larger top band.
-    dynamicMinComparisons = Math.min(1, minComparisons);
-    dynamicConfidenceThreshold = Math.min(confidenceThreshold, 68);
-    dynamicAdjacentMargin = 20;
-    dynamicTopK = 30;
-  }
-
   const effectiveMinComparisons = Math.min(
-    dynamicMinComparisons,
-    Math.max(1, imageCount - 1),
+    minComparisons,
+    Math.max(1, uploadedImages.length - 1),
   );
 
   // Add this inside the component body, after the state declarations:
@@ -116,22 +84,9 @@ export default function PhotoCompare() {
       const exclude = new Set([...queueKeys, ...extraExclusions]);
       Object.keys(completedMap || {}).forEach((key) => exclude.add(key));
 
-      // For large sets, bias candidate pairs toward a focus band defined by
-      // current ratings so most comparisons refine the most important photos.
-      const sortedByRating = [...images].sort(
-        (a, b) => (b.rating ?? DEFAULT_RATING) - (a.rating ?? DEFAULT_RATING),
-      );
-      const focusCount =
-        dynamicTopK && dynamicTopK < sortedByRating.length ? dynamicTopK : null;
-      const focusIds =
-        focusCount != null
-          ? new Set(sortedByRating.slice(0, focusCount).map((img) => img.id))
-          : null;
-
       const suggestions = buildCandidatePairs(images, {
         exclude,
         minComparisons: effectiveMinComparisons,
-        focusIds,
         limit: targetSize * 2,
       });
 
@@ -149,7 +104,6 @@ export default function PhotoCompare() {
         const fallbackSuggestions = buildCandidatePairs(images, {
           exclude: fallbackExclude,
           minComparisons: effectiveMinComparisons,
-          focusIds,
           limit: targetSize * 2,
         });
 
@@ -171,7 +125,7 @@ export default function PhotoCompare() {
 
       return queue;
     },
-    [effectiveMinComparisons, dynamicTopK],
+    [effectiveMinComparisons],
   );
 
   // Handle step changes with scroll to top
@@ -391,10 +345,9 @@ export default function PhotoCompare() {
           setCurrentPair(null);
           setComparisonQueue([]);
           const canStop = hasEnoughConfidenceEnhanced(updatedImages, {
-            minConfidence: dynamicConfidenceThreshold,
+            minConfidence: confidenceThreshold,
             minComparisons: effectiveMinComparisons,
-            adjacentMargin: dynamicAdjacentMargin,
-            topK: dynamicTopK,
+            adjacentMargin: 30,
           });
           if (canStop || Object.keys(updatedCompletedComparisons).length > 0) {
             calculateFinalRankings();
@@ -666,10 +619,9 @@ export default function PhotoCompare() {
 
       if (!nextPair && step === 'compare' && updatedImages.length >= 2) {
         const canStop = hasEnoughConfidenceEnhanced(updatedImages, {
-          minConfidence: dynamicConfidenceThreshold,
+          minConfidence: confidenceThreshold,
           minComparisons: effectiveMinComparisons,
-          adjacentMargin: dynamicAdjacentMargin,
-          topK: dynamicTopK,
+          adjacentMargin: 30,
         });
         if (canStop || filteredQueue.length === 0) {
           calculateFinalRankings();
@@ -773,18 +725,15 @@ export default function PhotoCompare() {
 
     if (step === 'compare') {
       const canStop = hasEnoughConfidenceEnhanced(uploadedImages, {
-        minConfidence: dynamicConfidenceThreshold,
+        minConfidence: confidenceThreshold,
         minComparisons: effectiveMinComparisons,
-        adjacentMargin: dynamicAdjacentMargin,
-        topK: dynamicTopK,
+        adjacentMargin: 30,
       });
 
       if (canStop) {
         calculateFinalRankings();
         changeStep('results');
       }
-    } else {
-      estimatedRemaining = 0;
     }
   }, [
     completedComparisons,
@@ -812,7 +761,7 @@ export default function PhotoCompare() {
           return sum + calculateConfidence(img.uncertainty || DEFAULT_UNCERTAINTY);
         }, 0) / uploadedImages.length;
 
-      if (allComparedEnough && avgConfidence >= dynamicConfidenceThreshold) {
+      if (allComparedEnough && avgConfidence >= confidenceThreshold) {
         calculateFinalRankings();
         changeStep('results');
       }
@@ -917,15 +866,14 @@ export default function PhotoCompare() {
                 const base = comparisonQueue.length;
                 if (base === 0) return 0;
                 const canStop = hasEnoughConfidenceEnhanced(uploadedImages, {
-                  minConfidence: dynamicConfidenceThreshold,
+                  minConfidence: confidenceThreshold,
                   minComparisons: effectiveMinComparisons,
-                  adjacentMargin: dynamicAdjacentMargin,
-                  topK: dynamicTopK,
+                  adjacentMargin: 30,
                 });
                 if (canStop) return 0;
                 const median = getMedianConfidence(uploadedImages);
                 const baseline = 50; // min confidence baseline
-                const target = Math.max(baseline + 1, dynamicConfidenceThreshold);
+                const target = Math.max(baseline + 1, confidenceThreshold);
                 const ratio = Math.max(0, Math.min(1, (median - baseline) / (target - baseline)));
                 // Scale down remaining up to 50% as confidence approaches threshold
                 let effective = Math.ceil(base * (1 - 0.5 * ratio));
