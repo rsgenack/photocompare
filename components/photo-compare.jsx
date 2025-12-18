@@ -187,10 +187,10 @@ export default function PhotoCompare() {
   }, []);
 
   // Calculate final rankings based on Elo rating
-  const calculateFinalRankings = useCallback(() => {
+  const calculateFinalRankings = useCallback((images = uploadedImages) => {
     try {
       // Ensure default ratings are present
-      const normalized = uploadedImages.map((img) => ({
+      const normalized = images.map((img) => ({
         ...img,
         rating: img.rating ?? DEFAULT_RATING,
         uncertainty: img.uncertainty ?? DEFAULT_UNCERTAINTY,
@@ -221,7 +221,7 @@ export default function PhotoCompare() {
       console.error('Error calculating rankings:', err);
       setError('Error calculating final rankings');
     }
-  }, [uploadedImages, completedComparisons]);
+  }, [uploadedImages]);
 
   // Helper to compute median confidence for current images
   const getMedianConfidence = (images) => {
@@ -618,50 +618,33 @@ export default function PhotoCompare() {
         }),
       );
 
-      let filteredQueue = comparisonQueue.filter(
+      const filteredQueue = comparisonQueue.filter(
         ([leftId, rightId]) => leftId !== imageId && rightId !== imageId,
       );
 
-      let nextPair = currentPair;
-      if (currentPair && (currentPair[0]?.id === imageId || currentPair[1]?.id === imageId)) {
-        const refilledQueue = replenishQueue(updatedImages, filteredComparisons, filteredQueue);
-        filteredQueue = refilledQueue;
-        if (refilledQueue.length > 0) {
-          const bestPair = memoizedFindMostInformativePair(updatedImages, refilledQueue, {
-            minComparisons: effectiveMinComparisons,
-          });
-          if (bestPair) {
-            const [nextLeftId, nextRightId] = bestPair;
-            const nextLeft = updatedImages.find((img) => img.id === nextLeftId);
-            const nextRight = updatedImages.find((img) => img.id === nextRightId);
-            if (nextLeft && nextRight) {
-              nextPair = [nextLeft, nextRight];
-              const nextKey = makePairKey(nextLeftId, nextRightId);
-              filteredQueue = refilledQueue.filter(
-                (pair) => makePairKey(pair[0], pair[1]) !== nextKey,
-              );
-            } else {
-              nextPair = null;
-            }
-          } else {
-            nextPair = null;
-          }
-        } else {
-          nextPair = null;
-        }
-      } else if (nextPair) {
-        const nextLeft = updatedImages.find((img) => img.id === nextPair[0]?.id);
-        const nextRight = updatedImages.find((img) => img.id === nextPair[1]?.id);
+      // Rebuild the queue to ensure the removed image never re-enters rotation
+      const rebuiltQueue = replenishQueue(updatedImages, filteredComparisons, filteredQueue);
+      let nextPair = null;
+      let nextQueue = rebuiltQueue;
+
+      if (rebuiltQueue.length > 0) {
+        const bestPair = memoizedFindMostInformativePair(updatedImages, rebuiltQueue, {
+          minComparisons: effectiveMinComparisons,
+        });
+        const selected = bestPair || rebuiltQueue[0];
+        const [nextLeftId, nextRightId] = selected;
+        const nextLeft = updatedImages.find((img) => img.id === nextLeftId);
+        const nextRight = updatedImages.find((img) => img.id === nextRightId);
         if (nextLeft && nextRight) {
           nextPair = [nextLeft, nextRight];
-        } else {
-          nextPair = null;
+          const selectedKey = makePairKey(nextLeftId, nextRightId);
+          nextQueue = rebuiltQueue.filter((pair) => makePairKey(pair[0], pair[1]) !== selectedKey);
         }
       }
 
       setUploadedImages(updatedImages);
       setCompletedComparisons(filteredComparisons);
-      setComparisonQueue(filteredQueue);
+      setComparisonQueue(nextQueue);
       setCurrentPair(nextPair);
 
       if (!nextPair && step === 'compare' && updatedImages.length >= 2) {
@@ -672,7 +655,7 @@ export default function PhotoCompare() {
           topK: dynamicTopK,
         });
         if (canStop || filteredQueue.length === 0) {
-          calculateFinalRankings();
+          calculateFinalRankings(updatedImages);
           changeStep('results');
         }
       }
@@ -687,8 +670,10 @@ export default function PhotoCompare() {
       comparisonQueue,
       completedComparisons,
       replenishQueue,
-      confidenceThreshold,
       effectiveMinComparisons,
+      dynamicConfidenceThreshold,
+      dynamicAdjacentMargin,
+      dynamicTopK,
     ],
   );
 
