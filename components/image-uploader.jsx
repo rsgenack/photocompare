@@ -34,7 +34,8 @@ export default function ImageUploader({ onImagesUploaded }) {
           return;
         }
 
-        const shouldShowCompression = imageFiles.some((file) => file.size > 2 * 1024 * 1024);
+        const compressionThresholdMB = 2;
+        const shouldShowCompression = imageFiles.some((file) => file.size > compressionThresholdMB * 1024 * 1024);
         if (shouldShowCompression) {
           setIsCompressing(true);
           setCompressionProgress(0);
@@ -45,7 +46,7 @@ export default function ImageUploader({ onImagesUploaded }) {
         for (let i = 0; i < imageFiles.length; i++) {
           const file = imageFiles[i];
           try {
-            const compressed = await compressImage(file);
+            const compressed = await compressImage(file, compressionThresholdMB);
             compressedFiles.push(compressed);
           } catch (compressionError) {
             console.error('Compression failed for', file.name, compressionError);

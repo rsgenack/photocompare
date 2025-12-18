@@ -187,10 +187,10 @@ export default function PhotoCompare() {
   }, []);
 
   // Calculate final rankings based on Elo rating
-  const calculateFinalRankings = useCallback(() => {
+  const calculateFinalRankings = useCallback((images = uploadedImages) => {
     try {
       // Ensure default ratings are present
-      const normalized = uploadedImages.map((img) => ({
+      const normalized = images.map((img) => ({
         ...img,
         rating: img.rating ?? DEFAULT_RATING,
         uncertainty: img.uncertainty ?? DEFAULT_UNCERTAINTY,
@@ -221,7 +221,7 @@ export default function PhotoCompare() {
       console.error('Error calculating rankings:', err);
       setError('Error calculating final rankings');
     }
-  }, [uploadedImages, completedComparisons]);
+  }, [uploadedImages]);
 
   // Helper to compute median confidence for current images
   const getMedianConfidence = (images) => {
@@ -655,7 +655,7 @@ export default function PhotoCompare() {
           topK: dynamicTopK,
         });
         if (canStop || filteredQueue.length === 0) {
-          calculateFinalRankings();
+          calculateFinalRankings(updatedImages);
           changeStep('results');
         }
       }
@@ -670,8 +670,10 @@ export default function PhotoCompare() {
       comparisonQueue,
       completedComparisons,
       replenishQueue,
-      confidenceThreshold,
       effectiveMinComparisons,
+      dynamicConfidenceThreshold,
+      dynamicAdjacentMargin,
+      dynamicTopK,
     ],
   );
 
