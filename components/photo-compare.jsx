@@ -42,6 +42,7 @@ export default function PhotoCompare() {
   const [completedComparisons, setCompletedComparisons] = useState({});
   const [zoom, setZoom] = useState(100);
   const [progress, setProgress] = useState(0);
+  const [remainingEstimate, setRemainingEstimate] = useState(0);
   const [error, setError] = useState(null);
   const [showDimensionWarning, setShowDimensionWarning] = useState(false);
   const [confidenceThreshold, setConfidenceThreshold] = useState(75); // Minimum confidence to stop comparisons
@@ -782,6 +783,8 @@ export default function PhotoCompare() {
         calculateFinalRankings();
         changeStep('results');
       }
+    } else {
+      estimatedRemaining = 0;
     }
   }, [
     completedComparisons,
