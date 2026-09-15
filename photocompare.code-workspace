@@ -1,0 +1,13 @@
+{
+  "folders": [
+    {
+      "path": "."
+    },
+    {
+      "path": "../Documents/Code/oldversionvotographer"
+    }
+  ],
+  "settings": {
+    "liveServer.settings.multiRootWorkspaceName": "photocompare"
+  }
+}
