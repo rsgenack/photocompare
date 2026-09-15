@@ -105,6 +105,6 @@ If issues arise after cutover:
 ## Technical Notes
 
 - **Static export**: The app uses `output: 'export'` in `v0-user-next.config.mjs`, generating static HTML in `out/`.
-- **Redirects**: `public/_redirects` ensures SPA-style deep links work on Cloudflare Pages.
+- **Pretty URLs**: Cloudflare Pages serves `compare.html` at `/compare` automatically. Do **not** add `public/_redirects` rules for the same paths — that causes a redirect loop with Pages' built-in pretty URL handling.
 - **Security headers**: `public/_headers` adds HSTS, X-Frame-Options, Referrer-Policy, and X-Content-Type-Options.
 - **No server features**: This app has no API routes or middleware; all routes are pre-rendered at build time.
