@@ -1,3 +1,4 @@
+import GATracker from '@/components/ga-tracker';
 import { getBaseUrl, getFullOgImageCandidates, getTwitterImageUrl } from '@/utils/environment';
 import Script from 'next/script';
 import { Suspense } from 'react';
@@ -143,7 +144,4 @@ export default function RootLayout({ children }) {
     </html>
   );
 }
-
-import GATracker from '@/components/ga-tracker';
-import './globals.css';
 

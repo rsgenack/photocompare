@@ -9,10 +9,7 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
-  output: 'standalone',
-  experimental: {
-    esmExternals: 'loose',
-  },
+  output: 'export',
   webpack: (config) => {
     config.resolve.fallback = { fs: false, path: false };
     return config;

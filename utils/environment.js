@@ -3,7 +3,16 @@
  */
 
 export function getEnvironment() {
-  // Check for Vercel environment first
+  // Cloudflare Pages
+  if (process.env.CF_PAGES === '1') {
+    const branch = process.env.CF_PAGES_BRANCH;
+    if (branch === 'main' || branch === 'production') {
+      return 'production';
+    }
+    return 'preview';
+  }
+
+  // Vercel
   if (process.env.VERCEL_ENV) {
     return process.env.VERCEL_ENV; // 'production', 'preview', 'development'
   }
@@ -21,6 +30,11 @@ export function getEnvironment() {
   return 'development';
 }
 
+function normalizeBaseUrl(url) {
+  if (!url) return url;
+  return url.replace(/\/+$/, '');
+}
+
 export function getBaseUrl() {
   const env = getEnvironment();
 
@@ -28,8 +42,15 @@ export function getBaseUrl() {
     case 'production':
       return 'https://votographer.com';
     case 'preview':
+      // Cloudflare Pages preview deployments
+      if (process.env.CF_PAGES_URL) {
+        return normalizeBaseUrl(process.env.CF_PAGES_URL);
+      }
       // Vercel preview deployments get a unique URL
-      return process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'https://votographer.com';
+      if (process.env.VERCEL_URL) {
+        return `https://${process.env.VERCEL_URL}`;
+      }
+      return 'https://votographer.com';
     case 'development':
       return 'http://localhost:3000';
     default:

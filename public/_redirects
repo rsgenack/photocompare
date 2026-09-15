@@ -1,0 +1,9 @@
+# Cloudflare Pages: map clean URLs to Next.js static export HTML files
+/compare     /compare.html     200
+/compare/    /compare.html     200
+/start       /start.html       200
+/start/      /start.html       200
+/type        /type.html        200
+/type/       /type.html        200
+/upload      /upload.html      200
+/upload/     /upload.html      200
