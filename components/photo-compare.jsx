@@ -668,6 +668,7 @@ export default function PhotoCompare() {
           downloadResults={downloadResults}
           changeStep={changeStep}
           onKeepRanking={keepRanking}
+          rankingStable={isRankingStable(uploadedImages)}
         />
         <DimensionWarningModal
           isOpen={showDimensionWarning}
