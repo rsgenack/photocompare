@@ -334,7 +334,7 @@ export default function PhotoCompare() {
             uploadedImages
               .map(
                 (img) =>
-                  `${img.rank},"${img.name}",${img.mu ?? img.rating || 0},${img.sigma ?? 0},${
+                  `${img.rank},"${img.name}",${(img.mu ?? img.rating) || 0},${img.sigma ?? 0},${
                     img.rating || img.mu || 0
                   },${img.comparisons || 0},${img.compressed ? 'Yes' : 'No'}`,
               )
@@ -351,7 +351,7 @@ export default function PhotoCompare() {
           const jsonData = uploadedImages.map((img) => ({
             rank: img.rank,
             filename: img.name,
-            mu: img.mu ?? img.rating || 0,
+            mu: (img.mu ?? img.rating) || 0,
             sigma: img.sigma ?? 0,
             rating: img.rating || img.mu || 0,
             comparisons: img.comparisons || 0,
