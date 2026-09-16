@@ -2,6 +2,7 @@
 
 import { useMobile } from '@/hooks/use-mobile';
 import { trackEvent } from '@/utils/analytics';
+import { rankImages } from '@/utils/ranking';
 import { scrollToTop } from '@/utils/scroll-utils';
 import { ArrowRight, FileJson, FileSpreadsheet, Trophy } from 'lucide-react';
 import { useEffect, useState } from 'react';
@@ -14,11 +15,24 @@ export default function ResultsPage({
   resetComparison,
   downloadResults,
   changeStep,
+  onKeepRanking,
 }) {
   const isMobile = useMobile();
   const handleResetComparison = () => {
     scrollToTop();
     resetComparison();
+  };
+
+  const handleKeepRanking = () => {
+    scrollToTop();
+    trackEvent('keep_ranking');
+    if (typeof onKeepRanking === 'function') {
+      onKeepRanking();
+      return;
+    }
+    if (typeof changeStep === 'function') {
+      changeStep('compare');
+    }
   };
 
   const [showAnimation, setShowAnimation] = useState(false);
@@ -31,20 +45,8 @@ export default function ResultsPage({
     return () => clearTimeout(timer);
   }, []);
 
-  // Ensure no ties in rankings
-  const ensureNoTies = (images) => {
-    // First sort by score (descending)
-    const sortedByScore = [...images].sort((a, b) => (b.score || 0) - (a.score || 0));
-
-    // Then assign unique ranks (if scores are tied, the earlier image in the array gets the higher rank)
-    return sortedByScore.map((image, index) => ({
-      ...image,
-      rank: index + 1,
-    }));
-  };
-
-  // Apply no-ties ranking
-  const rankedImages = ensureNoTies(uploadedImages);
+  // Rank by TrueSkill μ (rating). Unique ranks; leftover `score` is ignored.
+  const rankedImages = rankImages(uploadedImages);
 
   // Custom layout for the winner (first place)
   const customRenderItem = (item, index) => {
@@ -325,8 +327,14 @@ export default function ResultsPage({
           </div>
         </div>
 
-        {/* Reset Button */}
-        <div className="px-4 flex justify-center mb-12">
+        {/* Continue or reset */}
+        <div className="px-4 flex flex-col sm:flex-row justify-center items-center gap-4 mb-12">
+          <button
+            onClick={handleKeepRanking}
+            className="px-12 py-4 text-xl font-bold text-white bg-cardinal rounded-full hover:shadow-lg transition-all duration-200 flex items-center"
+          >
+            KEEP RANKING
+          </button>
           <button
             onClick={handleResetComparison}
             className="px-12 py-4 text-xl font-bold text-black bg-yellow_green rounded-full hover:shadow-lg transition-all duration-200 flex items-center"
