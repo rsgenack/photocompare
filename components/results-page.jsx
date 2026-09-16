@@ -16,6 +16,7 @@ export default function ResultsPage({
   downloadResults,
   changeStep,
   onKeepRanking,
+  rankingStable = false,
 }) {
   const isMobile = useMobile();
   const handleResetComparison = () => {
@@ -275,8 +276,13 @@ export default function ResultsPage({
         {/* Header Section */}
         <div className="px-4 mb-16">
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-8 text-center">
-            FINAL RANKINGS
+            {rankingStable ? 'RANKINGS' : 'CURRENT RANKINGS'}
           </h1>
+          {!rankingStable && (
+            <p className="text-center text-lg text-gray-700 mb-8 max-w-2xl mx-auto">
+              This list is a snapshot — keep ranking for more accuracy.
+            </p>
+          )}
 
           <div className="border-t-2 border-b-2 border-black py-4 mb-12 flex flex-col sm:flex-row justify-between items-center gap-4">
             <div className="text-lg font-bold">TOTAL PHOTOS: {rankedImages.length}</div>
