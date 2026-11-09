@@ -6,7 +6,6 @@ import { useEffect, useRef, useState } from 'react';
 
 export default function FullScreenCompare({
   progress,
-  remaining,
   leftImage,
   rightImage,
   onSelectLeft,
@@ -102,9 +101,6 @@ export default function FullScreenCompare({
         {active && !disabled && (
           <div className="fixed top-0 left-0 right-0 z-[1001] bg-white border-b-2 border-black">
             <div className="px-4 py-3 flex flex-col md:flex-row gap-3 md:gap-6 items-center justify-between pointer-events-auto">
-              <div className="text-base md:text-lg font-bold">
-                {formatNumber(remaining)} UNRESOLVED MATCHUPS
-              </div>
               <div className="text-base md:text-lg font-bold">
                 {formatNumber(Math.min(Math.round(progress), 100))}% COMPLETE
               </div>
