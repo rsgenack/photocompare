@@ -6,7 +6,6 @@ import { debugLog, monitorFocus } from '@/utils/debug-utils';
 import { formatNumber } from '@/utils/format';
 import {
     applyComparison,
-    countRemainingComparisons,
     isRankingStable,
     makePairKey,
     pairFromIds,
@@ -534,7 +533,6 @@ export default function PhotoCompare() {
 
   if (step === 'compare' && currentPair) {
     const progress = rankingProgress(uploadedImages, { pairHistory });
-    const remaining = countRemainingComparisons(uploadedImages, { pairHistory });
 
     return (
       <div className="max-w-4xl mx-auto relative">
@@ -546,14 +544,9 @@ export default function PhotoCompare() {
             COMPARE PHOTOS
           </h1>
 
-          <div className="border-t-2 border-b-2 border-black py-3 md:py-4 flex flex-col md:flex-row justify-between items-center gap-2 mb-4 md:mb-6">
-            <div className="text-base md:text-lg font-medium text-black">
-              {formatNumber(remaining)} UNRESOLVED MATCHUPS
-            </div>
-            <div className="text-base md:text-lg font-medium text-black">
-              {formatNumber(Math.min(Math.round(progress), 100))}% COMPLETE
-            </div>
-          </div>
+          <p className="border-t-2 border-b-2 border-black py-3 md:py-4 mb-4 md:mb-6 text-center text-base md:text-lg font-medium text-black">
+            {formatNumber(Math.min(Math.round(progress), 100))}% COMPLETE
+          </p>
 
           <div className="mb-4 md:mb-6">
             <div className="h-3 md:h-4 bg-gray-100 overflow-hidden border border-black">
@@ -591,7 +584,6 @@ export default function PhotoCompare() {
           {/* Fullscreen controls */}
           <FullScreenCompare
             progress={progress}
-            remaining={remaining}
             leftImage={currentPair[0]}
             rightImage={currentPair[1]}
             onSelectLeft={() => {
