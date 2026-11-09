@@ -12,6 +12,7 @@ import {
     pairFromIds,
     rankImages,
     rankingProgress,
+    recordPairVote,
     selectNextPair,
     withTrueSkillDefaults,
 } from '@/utils/ranking';
@@ -38,9 +39,8 @@ export default function PhotoCompare() {
   const [comparisonType, setComparisonType] = useState('');
   const [uploadedImages, setUploadedImages] = useState([]);
   const [currentPair, setCurrentPair] = useState(null);
-  const [completedComparisons, setCompletedComparisons] = useState({});
+  const [pairHistory, setPairHistory] = useState({});
   const [zoom, setZoom] = useState(100);
-  const [progress, setProgress] = useState(0);
   const [error, setError] = useState(null);
   const [showDimensionWarning, setShowDimensionWarning] = useState(false);
   const isMobile = useMobile();
@@ -63,9 +63,12 @@ export default function PhotoCompare() {
     };
   }, []);
 
-  const chooseNextPair = useCallback((images, lastPairKey = lastComparedKeyRef.current) => {
-    return pairFromIds(images, selectNextPair(images, { lastPairKey }));
-  }, []);
+  const chooseNextPair = useCallback((images, history = pairHistory) => {
+    return pairFromIds(images, selectNextPair(images, {
+      lastPairKey: lastComparedKeyRef.current,
+      pairHistory: history,
+    }));
+  }, [pairHistory]);
 
   // Handle step changes with scroll to top
   const changeStep = useCallback((newStep) => {
@@ -93,20 +96,19 @@ export default function PhotoCompare() {
   const keepRanking = useCallback(() => {
     // If the user continues after auto-stop, don't bounce back to results.
     // Early SEE RANKINGS still allows auto-stop once adjacent pairs separate.
-    if (isRankingStable(uploadedImages)) {
+    if (isRankingStable(uploadedImages, { pairHistory })) {
       allowAutoStopRef.current = false;
     }
     changeStep('compare');
-  }, [changeStep, uploadedImages]);
+  }, [changeStep, uploadedImages, pairHistory]);
 
   const beginFreshComparison = useCallback(() => {
     lastComparedKeyRef.current = null;
     allowAutoStopRef.current = true;
-    setCompletedComparisons({});
+    setPairHistory({});
     setCurrentPair(null);
     setProcessingSelection(false);
     setError(null);
-    setProgress(0);
   }, []);
 
   // Check if images have different dimensions
@@ -192,23 +194,14 @@ export default function PhotoCompare() {
         const [left, right] = currentPair;
         const pairKey = makePairKey(left.id, right.id);
         const loserId = left.id === winnerId ? right.id : left.id;
-        const updatedCompletedComparisons = {
-          ...completedComparisons,
-          [pairKey]: winnerId,
-        };
+        const updatedHistory = recordPairVote(pairHistory, winnerId, loserId);
         lastComparedKeyRef.current = pairKey;
 
         const updatedImages = applyComparison(uploadedImages, winnerId, loserId);
         setUploadedImages(updatedImages);
-        setCompletedComparisons(updatedCompletedComparisons);
+        setPairHistory(updatedHistory);
 
-        const nextPair = chooseNextPair(updatedImages, pairKey);
-        setCurrentPair(nextPair);
-
-        if (!nextPair && Object.keys(updatedCompletedComparisons).length > 0) {
-          calculateFinalRankings(updatedImages);
-          changeStep('results');
-        }
+        setCurrentPair(chooseNextPair(updatedImages, updatedHistory));
       } catch (err) {
         setError('Error selecting winner');
       } finally {
@@ -220,9 +213,7 @@ export default function PhotoCompare() {
     [
       currentPair,
       uploadedImages,
-      completedComparisons,
-      calculateFinalRankings,
-      changeStep,
+      pairHistory,
       processingSelection,
       chooseNextPair,
     ],
@@ -395,28 +386,19 @@ export default function PhotoCompare() {
         changeStep('upload');
       }
 
-      const filteredComparisons = Object.fromEntries(
-        Object.entries(completedComparisons).filter(([pairKey, winner]) => {
-          return !pairKey.includes(imageId) && winner !== imageId;
-        }),
+      const filteredHistory = Object.fromEntries(
+        Object.entries(pairHistory).filter(([, record]) => !record.ids.includes(imageId)),
       );
 
-      const nextPair = chooseNextPair(updatedImages);
       setUploadedImages(updatedImages);
-      setCompletedComparisons(filteredComparisons);
-      setCurrentPair(nextPair);
-
-      if (!nextPair && step === 'compare' && updatedImages.length >= 2) {
-        calculateFinalRankings(updatedImages);
-        changeStep('results');
-      }
+      setPairHistory(filteredHistory);
+      setCurrentPair(chooseNextPair(updatedImages, filteredHistory));
     },
     [
       uploadedImages,
-      calculateFinalRankings,
       changeStep,
       step,
-      completedComparisons,
+      pairHistory,
       chooseNextPair,
     ],
   );
@@ -445,13 +427,11 @@ export default function PhotoCompare() {
   ]);
 
   useEffect(() => {
-    setProgress(rankingProgress(uploadedImages));
-
-    if (step === 'compare' && allowAutoStopRef.current && isRankingStable(uploadedImages)) {
+    if (step === 'compare' && allowAutoStopRef.current && isRankingStable(uploadedImages, { pairHistory })) {
       calculateFinalRankings();
       changeStep('results');
     }
-  }, [uploadedImages, calculateFinalRankings, changeStep, step]);
+  }, [uploadedImages, pairHistory, calculateFinalRankings, changeStep, step]);
 
   // =====================================================================
   // LOCKED SLIDER COMPARISON CODE - VERSION 6
@@ -553,6 +533,9 @@ export default function PhotoCompare() {
   }
 
   if (step === 'compare' && currentPair) {
+    const progress = rankingProgress(uploadedImages, { pairHistory });
+    const remaining = countRemainingComparisons(uploadedImages, { pairHistory });
+
     return (
       <div className="max-w-4xl mx-auto relative">
         {/* Removed floating logo button per user request */}
@@ -565,7 +548,7 @@ export default function PhotoCompare() {
 
           <div className="border-t-2 border-b-2 border-black py-3 md:py-4 flex flex-col md:flex-row justify-between items-center gap-2 mb-4 md:mb-6">
             <div className="text-base md:text-lg font-medium text-black">
-              {formatNumber(countRemainingComparisons(uploadedImages))} COMPARISONS REMAINING
+              {formatNumber(remaining)} UNRESOLVED MATCHUPS
             </div>
             <div className="text-base md:text-lg font-medium text-black">
               {formatNumber(Math.min(Math.round(progress), 100))}% COMPLETE
@@ -608,7 +591,7 @@ export default function PhotoCompare() {
           {/* Fullscreen controls */}
           <FullScreenCompare
             progress={progress}
-            remaining={formatNumber(countRemainingComparisons(uploadedImages))}
+            remaining={remaining}
             leftImage={currentPair[0]}
             rightImage={currentPair[1]}
             onSelectLeft={() => {
@@ -668,7 +651,7 @@ export default function PhotoCompare() {
           downloadResults={downloadResults}
           changeStep={changeStep}
           onKeepRanking={keepRanking}
-          rankingStable={isRankingStable(uploadedImages)}
+          rankingStable={isRankingStable(uploadedImages, { pairHistory })}
         />
         <DimensionWarningModal
           isOpen={showDimensionWarning}

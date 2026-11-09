@@ -1,11 +1,3 @@
-/**
- * Anytime TrueSkill ranking: coverage, then adjacent-pair sampling.
- *
- * Coverage: every photo gets 1 comparison (unseen vs pivot).
- * Then: sort by μ and compare the adjacent pair with the highest overlap.
- * Auto-stop when every adjacent pair satisfies |μi − μi+1| > c(σi + σi+1).
- */
-
 import {
   DEFAULT_MU,
   DEFAULT_SIGMA,
@@ -18,6 +10,9 @@ export { DEFAULT_MU, DEFAULT_SIGMA, getMu, getSigma, updateTrueSkill };
 
 /** Multiplier c in |μi − μi+1| > c(σi + σi+1). */
 export const DEFAULT_SEPARATION_C = 1;
+const DIRECT_WIN_MARGIN = 3;
+const FIRST_PLACE_WIN_MARGIN = 5;
+const MAX_REPEAT_PENALTY = 3;
 
 export function makePairKey(idA, idB) {
   if (idA == null || idB == null) return '';
@@ -60,136 +55,106 @@ export function skillOverlap(imageA, imageB, c = DEFAULT_SEPARATION_C) {
   return c * sigmaSum - muDiff;
 }
 
-export function isAdjacentPairSeparated(imageA, imageB, c = DEFAULT_SEPARATION_C) {
-  return skillOverlap(imageA, imageB, c) < 0;
+export function recordPairVote(pairHistory, winnerId, loserId) {
+  const key = makePairKey(winnerId, loserId);
+  const record = pairHistory[key];
+  return {
+    ...pairHistory,
+    [key]: {
+      ids: [winnerId, loserId],
+      count: (record?.count || 0) + 1,
+      wins: { ...record?.wins, [winnerId]: (record?.wins[winnerId] || 0) + 1 },
+    },
+  };
 }
 
-function pickPivot(seen) {
-  return sortByMuDesc(seen)[0] || null;
+function getAdjacentMatchups(ranked, pairHistory, c) {
+  return ranked.slice(1).map((right, index) => {
+    const left = ranked[index];
+    const record = pairHistory[makePairKey(left.id, right.id)];
+    const overlap = skillOverlap(left, right, c);
+    const directWins = record ? (record.wins[left.id] || 0) - (record.wins[right.id] || 0) : 0;
+    // Require more head-to-head evidence for first place in larger sets.
+    const positionMargin = index === 0 ? FIRST_PLACE_WIN_MARGIN : DIRECT_WIN_MARGIN;
+    const winMargin = ranked.length === 2 ? 1 : positionMargin;
+    const threshold = c * (getSigma(left) + getSigma(right));
+    const skillProgress = threshold <= 0 ? 1 : 1 - overlap / threshold;
+    return {
+      overlap,
+      resolved: overlap < 0 || directWins >= winMargin,
+      progress: Math.min(1, Math.max(skillProgress, directWins / winMargin)),
+    };
+  });
 }
 
 /**
- * Choose the next comparison pair.
- * Coverage phase until every photo has ≥1 comparison (unseen vs current pivot).
- * Then adjacent pair with the highest overlap.
- *
- * @param {Array} images
- * @param {{ lastPairKey?: string, c?: number }} [options]
- * @returns {[*, *] | null} ids
+ * Introduce each photo against a mid-ranked opponent, then prioritize unresolved
+ * neighbors. Use a nearby alternate when the previous pair would come up again.
  */
-export function selectNextPair(images, options = {}) {
+export function selectNextPair(images, { lastPairKey, pairHistory = {}, c = DEFAULT_SEPARATION_C } = {}) {
   const items = (images || []).filter((img) => img && img.id != null);
   if (items.length < 2) return null;
 
-  const lastPairKey = options.lastPairKey || '';
-  const c = options.c ?? DEFAULT_SEPARATION_C;
-
-  const unseen = items.filter((img) => (img.comparisons || 0) < 1);
-  const seen = items.filter((img) => (img.comparisons || 0) >= 1);
-
+  const ranked = sortByMuDesc(items);
+  const unseen = items.filter((img) => !img.comparisons);
   if (unseen.length > 0) {
-    if (seen.length === 0) {
-      return [unseen[0].id, unseen[1].id];
-    }
-    const pivot = pickPivot(seen);
-    if (!pivot || pivot.id === unseen[0].id) {
-      const other = items.find((img) => img.id !== unseen[0].id);
-      return other ? [unseen[0].id, other.id] : null;
-    }
+    const seen = ranked.filter((img) => img.comparisons);
+    const pivot = seen[Math.floor(seen.length / 2)] || unseen[1];
     return [unseen[0].id, pivot.id];
   }
 
-  const ranked = sortByMuDesc(items);
+  const adjacent = getAdjacentMatchups(ranked, pairHistory, c);
   let bestPair = null;
   let bestScore = -Infinity;
 
   for (let i = 0; i < ranked.length - 1; i++) {
     const left = ranked[i];
-    const right = ranked[i + 1];
-    const key = makePairKey(left.id, right.id);
-    const overlap = skillOverlap(left, right, c);
-    const repeatPenalty = key && key === lastPairKey ? 1e-6 : 0;
-    const comparisonPenalty = 1e-9 * ((left.comparisons || 0) + (right.comparisons || 0));
-    const score = overlap - repeatPenalty - comparisonPenalty;
-    if (score > bestScore) {
-      bestScore = score;
-      bestPair = [left.id, right.id];
+
+    for (let j = i + 1; j < Math.min(i + 3, ranked.length); j++) {
+      const right = ranked[j];
+      const key = makePairKey(left.id, right.id);
+      if (key === lastPairKey && ranked.length > 2) continue;
+
+      const neighbors = j === i + 1 ? adjacent[i] : null;
+      const overlap = neighbors?.overlap ?? skillOverlap(left, right, c);
+      const unresolvedBonus = neighbors && !neighbors.resolved ? DEFAULT_SIGMA : 0;
+      const priorVotes = pairHistory[key]?.count || 0;
+      const repeatPenalty = Math.min(priorVotes, MAX_REPEAT_PENALTY);
+      const score = overlap + unresolvedBonus - repeatPenalty;
+      if (score > bestScore) {
+        bestScore = score;
+        bestPair = [left.id, right.id];
+      }
     }
   }
 
   return bestPair;
 }
 
-/**
- * Auto-stop when every photo has been seen once and every adjacent pair is
- * separated: |μi − μi+1| > c(σi + σi+1).
- * @param {Array} images
- * @param {number} [c]
- * @returns {boolean}
- */
-export function isRankingStable(images, c = DEFAULT_SEPARATION_C) {
-  if (!images || images.length < 2) return false;
-  const allSeen = images.every((img) => (img.comparisons || 0) >= 1);
-  if (!allSeen) return false;
-
-  const ranked = sortByMuDesc(images);
-  for (let i = 0; i < ranked.length - 1; i++) {
-    if (!isAdjacentPairSeparated(ranked[i], ranked[i + 1], c)) {
-      return false;
-    }
-  }
-  return true;
+export function isRankingStable(images, { c = DEFAULT_SEPARATION_C, pairHistory = {} } = {}) {
+  return images?.length >= 2 && countRemainingComparisons(images, { c, pairHistory }) === 0;
 }
 
-/**
- * Ranking stability used as progress (0–100).
- * 50% coverage of first comparisons + 50% adjacent-pair separation.
- * @param {Array} images
- * @param {number} [c]
- * @returns {number}
- */
-export function rankingProgress(images, c = DEFAULT_SEPARATION_C) {
+/** Progress combines first-comparison coverage and resolution of adjacent matchups. */
+export function rankingProgress(images, { c = DEFAULT_SEPARATION_C, pairHistory = {} } = {}) {
   if (!images || images.length < 2) return 100;
 
-  const coverage =
-    images.filter((img) => (img.comparisons || 0) >= 1).length / images.length;
+  const coverage = images.filter((img) => img.comparisons).length / images.length;
+  const adjacent = getAdjacentMatchups(sortByMuDesc(images), pairHistory, c);
+  if (coverage === 1 && adjacent.every((matchup) => matchup.resolved)) return 100;
 
-  const ranked = sortByMuDesc(images);
-  const adjacentCount = ranked.length - 1;
-  let separationSum = 0;
-  for (let i = 0; i < adjacentCount; i++) {
-    const gap = Math.abs(getMu(ranked[i]) - getMu(ranked[i + 1]));
-    const threshold = c * (getSigma(ranked[i]) + getSigma(ranked[i + 1]));
-    separationSum += threshold <= 0 ? 1 : Math.min(1, gap / threshold);
-  }
-  const stability = adjacentCount > 0 ? separationSum / adjacentCount : 1;
-
-  return Math.max(0, Math.min(100, Math.round(100 * (0.5 * coverage + 0.5 * stability))));
+  const resolution = adjacent.reduce((sum, matchup) => sum + matchup.progress, 0) / adjacent.length;
+  return Math.min(99, Math.round(50 * (coverage + resolution)));
 }
 
-/**
- * Lower-bound remaining comparisons: unseen photos, then unresolved adjacent pairs.
- * @param {Array} images
- * @param {number} [c]
- * @returns {number}
- */
-export function countRemainingComparisons(images, c = DEFAULT_SEPARATION_C) {
+/** Count first comparisons still needed, then the unresolved adjacent matchups. */
+export function countRemainingComparisons(images, { c = DEFAULT_SEPARATION_C, pairHistory = {} } = {}) {
   if (!images || images.length < 2) return 0;
 
-  const unseen = images.filter((img) => (img.comparisons || 0) < 1).length;
-  const seen = images.length - unseen;
-  if (unseen > 0) {
-    return seen === 0 ? Math.max(0, unseen - 1) : unseen;
-  }
+  const unseen = images.filter((img) => !img.comparisons).length;
+  if (unseen > 0) return unseen === images.length ? unseen - 1 : unseen;
 
-  const ranked = sortByMuDesc(images);
-  let unresolved = 0;
-  for (let i = 0; i < ranked.length - 1; i++) {
-    if (!isAdjacentPairSeparated(ranked[i], ranked[i + 1], c)) {
-      unresolved += 1;
-    }
-  }
-  return unresolved;
+  return getAdjacentMatchups(sortByMuDesc(images), pairHistory, c).filter((matchup) => !matchup.resolved).length;
 }
 
 /**
